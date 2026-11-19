@@ -45,7 +45,7 @@ export class StockAlertService {
 
   checkCatalogStock(): void {
     this.productService
-      .getAll()
+      .getAll(undefined, 1, 100)
       .pipe(
         take(1),
         catchError(() => of(null)),

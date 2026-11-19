@@ -8,10 +8,13 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 })
 export class PaginationComponent {
   readonly totalItems = input.required<number>();
-  readonly pageSize = input<number>(8);
+  readonly pageSize = input<number>(10);
   readonly currentPage = input<number>(1);
+  readonly showPageSizeSelector = input<boolean>(false);
+  readonly pageSizeOptions = input<number[]>([10, 25, 50, 100]);
 
   readonly pageChange = output<number>();
+  readonly pageSizeChange = output<number>();
 
   protected readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.totalItems() / this.pageSize())),
@@ -31,6 +34,14 @@ export class PaginationComponent {
   protected goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages()) {
       this.pageChange.emit(page);
+    }
+  }
+
+  protected onPageSizeSelect(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const nextSize = Number(select.value);
+    if (Number.isFinite(nextSize) && nextSize > 0) {
+      this.pageSizeChange.emit(nextSize);
     }
   }
 }

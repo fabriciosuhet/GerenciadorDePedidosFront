@@ -155,7 +155,7 @@
           </svg>
         </button>
 
-        <form (ngSubmit)="onHeaderSearch()" class="relative w-full max-w-md">
+        <form [formGroup]="searchForm" (ngSubmit)="onHeaderSearch()" class="relative w-full max-w-md">
           <label for="header-order-search" class="sr-only">Buscar pedido por número ou status</label>
           <svg
             class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-400"
@@ -169,7 +169,7 @@
           <input
             id="header-order-search"
             type="search"
-            [formControl]="searchControl"
+            formControlName="query"
             placeholder="Buscar pedido por nº (ex: 12) ou status..."
             class="w-full rounded-xl border border-zinc-200 bg-zinc-100/70 py-2 pr-14 pl-10 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-lime-400"
           />

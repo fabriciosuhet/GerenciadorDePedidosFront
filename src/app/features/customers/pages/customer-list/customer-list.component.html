@@ -28,12 +28,12 @@
   <div
     class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
   >
-    <form (ngSubmit)="loadCustomers()" class="flex flex-col gap-3 sm:flex-row">
+    <form [formGroup]="searchForm" (ngSubmit)="searchCustomers()" class="flex flex-col gap-3 sm:flex-row">
       <label for="customer-search" class="sr-only">Buscar cliente por nome ou telefone</label>
       <input
         id="customer-search"
         type="text"
-        [formControl]="searchControl"
+        formControlName="query"
         placeholder="Buscar por nome ou telefone..."
         class="flex-1 rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
       />
@@ -44,7 +44,7 @@
         >
           Buscar
         </button>
-        @if (searchControl.value) {
+        @if (searchForm.controls.query.value) {
           <button
             type="button"
             (click)="clearSearch()"
@@ -93,7 +93,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-100 bg-white dark:divide-zinc-800/80 dark:bg-zinc-900">
-            @for (customer of paginatedCustomers(); track customer.id) {
+            @for (customer of customers(); track customer.id) {
               <tr class="transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40">
                 <td class="px-6 py-4 font-bold text-zinc-900 dark:text-white">
                   {{ customer.nomeCompleto }}
@@ -138,10 +138,12 @@
       </div>
 
       <app-pagination
-        [totalItems]="customers().length"
-        [pageSize]="pageSize"
+        [totalItems]="totalCount()"
+        [pageSize]="pageSize()"
         [currentPage]="currentPage()"
-        (pageChange)="currentPage.set($event)"
+        [showPageSizeSelector]="true"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
       />
     }
   </div>

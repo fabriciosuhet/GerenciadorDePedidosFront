@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
@@ -33,16 +33,21 @@ export class StockMovementListComponent implements OnInit {
   protected readonly StockMovementType = StockMovementType;
   private readonly productService = inject(ProductService);
   private readonly toastService = inject(ToastService);
+  private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly pageSize = 8;
+  protected readonly pageSize = signal(10);
   protected readonly currentPage = signal(1);
+  protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly movements = signal<StockMovementListItem[]>([]);
   protected readonly selectedTypeFilter = signal<StockMovementType | null>(null);
   protected readonly selectedDetail = signal<StockMovementDetail | null>(null);
-  protected readonly searchControl = new FormControl('', { nonNullable: true });
+
+  protected readonly searchForm = this.fb.nonNullable.group({
+    query: [''],
+  });
 
   protected readonly filteredMovements = computed(() => {
     const typeFilter = this.selectedTypeFilter();
@@ -51,11 +56,6 @@ export class StockMovementListComponent implements OnInit {
       return all;
     }
     return all.filter((item) => item.tipoMovimentacao === typeFilter);
-  });
-
-  protected readonly paginatedMovements = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.filteredMovements().slice(start, start + this.pageSize);
   });
 
   ngOnInit(): void {
@@ -67,7 +67,11 @@ export class StockMovementListComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.productService
-      .getStockMovementsWithDetails(this.searchControl.value)
+      .getStockMovementsWithDetails(
+        this.searchForm.controls.query.value,
+        this.currentPage(),
+        this.pageSize(),
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -75,10 +79,11 @@ export class StockMovementListComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.movements.set(res.items);
-          this.currentPage.set(1);
+          this.totalCount.set(res.totalCount);
         },
         error: (err: unknown) => {
           this.movements.set([]);
+          this.totalCount.set(0);
           this.errorMessage.set(
             extractApiErrorMessage(err, 'Erro ao carregar movimentações de estoque.'),
           );
@@ -86,14 +91,30 @@ export class StockMovementListComponent implements OnInit {
       });
   }
 
+  protected searchMovements(): void {
+    this.currentPage.set(1);
+    this.loadMovements();
+  }
+
   protected selectTypeFilter(type: StockMovementType | null): void {
     this.selectedTypeFilter.set(type);
-    this.currentPage.set(1);
   }
 
   protected clearSearch(): void {
-    this.searchControl.setValue('');
+    this.searchForm.controls.query.setValue('');
     this.selectedTypeFilter.set(null);
+    this.currentPage.set(1);
+    this.loadMovements();
+  }
+
+  protected onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadMovements();
+  }
+
+  protected onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
     this.loadMovements();
   }
 

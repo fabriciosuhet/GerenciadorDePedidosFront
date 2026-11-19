@@ -15,8 +15,10 @@ export class CustomerService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/api/cliente`;
 
-  getAll(query?: string): Observable<PagedResult<Customer>> {
-    let params = new HttpParams();
+  getAll(query?: string, pageNumber = 1, pageSize = 10): Observable<PagedResult<Customer>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
     if (query?.trim()) {
       params = params.set('query', query.trim());
     }

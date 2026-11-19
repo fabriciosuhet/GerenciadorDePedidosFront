@@ -57,10 +57,15 @@ describe('StockAlertService', () => {
     expect(service.isVisible()).toBe(true);
   });
 
-  it('checkCatalogStock queries GET /api/produto and updates alerts', () => {
+  it('checkCatalogStock queries GET /api/produto with pageSize=100 and updates alerts', () => {
     service.checkCatalogStock();
 
-    const req = httpMock.expectOne((r) => r.url.endsWith('/api/produto'));
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url.endsWith('/api/produto') &&
+        r.params.get('pageNumber') === '1' &&
+        r.params.get('pageSize') === '100',
+    );
     req.flush({
       items: [{ id: 7, nome: 'Webcam', preco: 250, estoque: 12 }],
       totalCount: 1,

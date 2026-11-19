@@ -19,8 +19,10 @@ export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/api/produto`;
 
-  getAll(query?: string): Observable<PagedResult<Product>> {
-    let params = new HttpParams();
+  getAll(query?: string, pageNumber = 1, pageSize = 10): Observable<PagedResult<Product>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
     if (query?.trim()) {
       params = params.set('query', query.trim());
     }
@@ -59,8 +61,14 @@ export class ProductService {
     });
   }
 
-  getStockMovements(query?: string): Observable<PagedResult<StockMovementSummary>> {
-    let params = new HttpParams();
+  getStockMovements(
+    query?: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ): Observable<PagedResult<StockMovementSummary>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
     if (query?.trim()) {
       params = params.set('query', query.trim());
     }
@@ -76,8 +84,12 @@ export class ProductService {
     );
   }
 
-  getStockMovementsWithDetails(query?: string): Observable<PagedResult<StockMovementListItem>> {
-    return this.getStockMovements(query).pipe(
+  getStockMovementsWithDetails(
+    query?: string,
+    pageNumber = 1,
+    pageSize = 10,
+  ): Observable<PagedResult<StockMovementListItem>> {
+    return this.getStockMovements(query, pageNumber, pageSize).pipe(
       switchMap((paged) => {
         if (paged.items.length === 0) {
           return of({ ...paged, items: [] });

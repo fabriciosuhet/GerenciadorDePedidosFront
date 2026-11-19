@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { LoadingService } from '../../../core/services/loading.service';
@@ -34,9 +34,12 @@ export class ShellComponent implements OnInit {
   protected readonly themeService = inject(ThemeService);
   protected readonly stockAlertService = inject(StockAlertService);
   private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
 
   protected readonly mobileMenuOpen = signal(false);
-  protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly searchForm = this.fb.nonNullable.group({
+    query: [''],
+  });
 
   protected readonly userInitial = computed(() => {
     const email = this.authService.userEmail();
@@ -48,7 +51,7 @@ export class ShellComponent implements OnInit {
   }
 
   protected onHeaderSearch(): void {
-    const raw = this.searchControl.value.trim();
+    const raw = this.searchForm.controls.query.value.trim();
     void this.router.navigate(['/orders'], {
       queryParams: raw ? { q: raw } : {},
     });

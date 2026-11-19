@@ -16,12 +16,12 @@
   <div
     class="space-y-4 rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
   >
-    <form (ngSubmit)="loadMovements()" class="flex flex-col gap-3 sm:flex-row">
+    <form [formGroup]="searchForm" (ngSubmit)="searchMovements()" class="flex flex-col gap-3 sm:flex-row">
       <label for="movement-search" class="sr-only">Filtrar movimentações</label>
       <input
         id="movement-search"
         type="text"
-        [formControl]="searchControl"
+        formControlName="query"
         placeholder="Filtrar por produto..."
         class="flex-1 rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
       />
@@ -32,7 +32,7 @@
         >
           Buscar
         </button>
-        @if (searchControl.value || selectedTypeFilter() !== null) {
+        @if (searchForm.controls.query.value || selectedTypeFilter() !== null) {
           <button
             type="button"
             (click)="clearSearch()"
@@ -132,7 +132,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-100 bg-white dark:divide-zinc-800/80 dark:bg-zinc-900">
-            @for (mov of paginatedMovements(); track mov.id) {
+            @for (mov of filteredMovements(); track mov.id) {
               <tr class="transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40">
                 <td class="px-6 py-4">
                   <span
@@ -166,10 +166,12 @@
       </div>
 
       <app-pagination
-        [totalItems]="filteredMovements().length"
-        [pageSize]="pageSize"
+        [totalItems]="totalCount()"
+        [pageSize]="pageSize()"
         [currentPage]="currentPage()"
-        (pageChange)="currentPage.set($event)"
+        [showPageSizeSelector]="true"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
       />
     }
   </div>

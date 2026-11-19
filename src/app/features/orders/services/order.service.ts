@@ -10,8 +10,10 @@ export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/api/pedido`;
 
-  getAll(query?: string): Observable<PagedResult<OrderSummary>> {
-    let params = new HttpParams();
+  getAll(query?: string, pageNumber = 1, pageSize = 10): Observable<PagedResult<OrderSummary>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize);
     if (query?.trim()) {
       params = params.set('query', query.trim());
     }
