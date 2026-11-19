@@ -1,0 +1,236 @@
+<div class="min-h-screen bg-zinc-50 font-sans text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100">
+  @if (loadingService.isLoading()) {
+    <div class="fixed inset-x-0 top-0 z-50 h-1 overflow-hidden bg-zinc-900">
+      <div class="h-full w-1/2 animate-pulse bg-lime-400"></div>
+    </div>
+  }
+
+  @if (mobileMenuOpen()) {
+    <div
+      class="fixed inset-0 z-30 bg-zinc-950/70 backdrop-blur-xs lg:hidden"
+      (click)="mobileMenuOpen.set(false)"
+    ></div>
+  }
+
+  <aside
+    class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-zinc-200/80 bg-white transition-transform duration-200 lg:translate-x-0 dark:border-zinc-800/90 dark:bg-zinc-950"
+    [class.-translate-x-full]="!mobileMenuOpen()"
+    [class.translate-x-0]="mobileMenuOpen()"
+  >
+    <div class="flex h-16 items-center justify-between border-b border-zinc-100 px-5 dark:border-zinc-800/80">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400 text-zinc-950 shadow-sm shadow-lime-400/30 ring-1 ring-lime-500/40"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+            />
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-extrabold tracking-tight text-zinc-950 dark:text-white">
+            Gerenciador de Pedidos
+          </p>
+          <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Gestão Comercial</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1 px-3 py-4" aria-label="Menu principal">
+      <p class="px-3 pb-2 font-display text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+        Operação
+      </p>
+
+      <app-sidebar-nav-item
+        route="/dashboard"
+        label="Visão Geral"
+        (navigated)="mobileMenuOpen.set(false)"
+      >
+        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+      </app-sidebar-nav-item>
+
+      <app-sidebar-nav-item
+        route="/orders"
+        label="Pedidos"
+        (navigated)="mobileMenuOpen.set(false)"
+      >
+        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
+        </svg>
+      </app-sidebar-nav-item>
+
+      <app-sidebar-nav-item
+        route="/products"
+        label="Produtos"
+        [exact]="true"
+        (navigated)="mobileMenuOpen.set(false)"
+      >
+        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+        </svg>
+      </app-sidebar-nav-item>
+
+      @if (authService.isAdmin()) {
+        <app-sidebar-nav-item
+          route="/customers"
+          label="Clientes"
+          (navigated)="mobileMenuOpen.set(false)"
+        >
+          <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+          </svg>
+        </app-sidebar-nav-item>
+      }
+
+      @if (authService.isAdmin()) {
+        <div class="pt-4">
+          <p class="px-3 pb-2 font-display text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            Auditoria & Estoque
+          </p>
+          <app-sidebar-nav-item
+            route="/products/movements"
+            label="Movimentações"
+            (navigated)="mobileMenuOpen.set(false)"
+          >
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+            </svg>
+          </app-sidebar-nav-item>
+        </div>
+      }
+    </nav>
+
+    <div class="border-t border-zinc-100 p-4 dark:border-zinc-800/80">
+      <div
+        class="mb-3 rounded-2xl border border-zinc-200/70 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">
+            {{ authService.userEmail() }}
+          </span>
+          <span
+            class="shrink-0 rounded-md px-2 py-0.5 font-display text-xs font-bold"
+            [class]="
+              authService.isAdmin()
+                ? 'bg-lime-400/25 text-lime-900 dark:bg-lime-400/15 dark:text-lime-300'
+                : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+            "
+          >
+            {{ authService.role() }}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="authService.logout(true)"
+        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+        </svg>
+        Encerrar sessão
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex min-h-screen flex-col lg:pl-64">
+    <header
+      class="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-zinc-200/80 bg-white/85 px-4 backdrop-blur-md sm:px-6 lg:px-8 dark:border-zinc-800/80 dark:bg-zinc-950/85"
+    >
+      <div class="flex flex-1 items-center gap-3">
+        <button
+          type="button"
+          class="rounded-xl border border-zinc-200 p-2 text-zinc-600 hover:bg-zinc-100 lg:hidden dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          (click)="mobileMenuOpen.set(true)"
+          aria-label="Abrir menu lateral"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+
+        <form (ngSubmit)="onHeaderSearch()" class="relative w-full max-w-md">
+          <label for="header-order-search" class="sr-only">Buscar pedido por número ou status</label>
+          <svg
+            class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          <input
+            id="header-order-search"
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Buscar pedido por nº (ex: 12) ou status..."
+            class="w-full rounded-xl border border-zinc-200 bg-zinc-100/70 py-2 pr-14 pl-10 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-lime-400"
+          />
+          <span
+            class="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded-md border border-zinc-200 bg-white px-1.5 py-0.5 font-display text-xs text-zinc-400 sm:inline-block dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            ↵
+          </span>
+        </form>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a
+          routerLink="/orders/new"
+          class="hidden items-center gap-1.5 rounded-xl bg-lime-400 px-3.5 py-2 text-xs font-bold text-zinc-950 shadow-xs transition hover:bg-lime-300 sm:inline-flex"
+        >
+          + Novo Pedido
+        </a>
+
+        <button
+          type="button"
+          (click)="themeService.toggleTheme()"
+          class="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          [attr.aria-label]="themeService.isDarkMode() ? 'Ativar tema claro' : 'Ativar tema escuro'"
+        >
+          @if (themeService.isDarkMode()) {
+            <svg class="h-4 w-4 text-lime-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+            </svg>
+          } @else {
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+            </svg>
+          }
+        </button>
+
+        <div class="hidden items-center gap-3 border-l border-zinc-200 pl-3 sm:flex dark:border-zinc-800">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 font-display text-xs font-bold uppercase text-lime-400 dark:bg-lime-400 dark:text-zinc-950"
+          >
+            {{ userInitial() }}
+          </div>
+          <div class="text-left">
+            <p class="max-w-44 truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">
+              {{ authService.userEmail() }}
+            </p>
+            <p class="font-display text-xs text-zinc-500 dark:text-zinc-400">
+              {{ authService.role() }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6 lg:p-8">
+      <router-outlet />
+    </main>
+  </div>
+
+  <app-stock-alert-popup
+    [items]="stockAlertService.visibleAlerts()"
+    (dismissed)="stockAlertService.dismiss()"
+  />
+</div>
