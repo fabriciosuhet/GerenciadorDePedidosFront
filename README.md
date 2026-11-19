@@ -1,59 +1,38 @@
-# GerenciadorDePedidosFront
+# Gerenciador de Pedidos — Front-end (Angular)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.3.0.
+Interface web desenvolvida em **Angular 22** com **Tailwind CSS v4 + SCSS** para consumir a API REST do repositório backend [GerenciadorDePedidos](../GerenciadorDePedidos).
 
-## Development server
+## Funcionalidades
 
-To start a local development server, run:
+- **Autenticação JWT**: Login (`POST /api/login`) e Auto-cadastro (`POST /api/cliente/registrar`) com validação de senha alinhada ao backend e decodificação de claims (`Usuario` e `Admin`).
+- **Dashboard**: Visão resumida de pedidos recentes, catálogo de produtos e totais.
+- **Pedidos**: Listagem com filtros rápidos por status (`Pendente`, `Processado`, `Concluido`, `Cancelado`), visualização de itens do pedido (`GET /api/pedido/{id}`), criação de novos pedidos (`POST /api/pedido`) com cálculo em tempo real e exclusão (Admin).
+- **Produtos e Estoque**: Catálogo pesquisável, criação/edição/exclusão (Admin) e ajuste de entrada/saída de estoque (`adicionar-estoque` / `remover-estoque`).
+- **Clientes**: Listagem com busca, visualização de detalhes e pedidos do cliente, edição de e-mail/telefone, criação com seleção de perfil (Admin) e exclusão (Admin).
+- **Movimentações de Estoque (Admin)**: Consulta de histórico e detalhes de movimentações (`GET /api/produto/movimentacao-estoque`).
 
-```bash
-ng serve
+## Configuração da API
+
+Por padrão, `src/environments/environment.ts` e `src/environments/environment.development.ts` apontam para o Docker Compose do backend:
+
+```ts
+apiUrl: 'http://localhost:8080/api'
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Se estiver executando o backend via `dotnet run` (`http://localhost:5133`), altere `apiUrl` para `http://localhost:5133/api` em `src/environments/environment.development.ts`.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Comandos
 
 ```bash
-ng generate component component-name
+# Instalar dependências
+npm install
+
+# Rodar em desenvolvimento (http://localhost:4200)
+npm start
+
+# Build de produção
+npm run build
+
+# Executar testes unitários (Vitest)
+npm test -- --watch=false
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

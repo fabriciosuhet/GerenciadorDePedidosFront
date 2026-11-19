@@ -1,0 +1,16 @@
+<a
+  [routerLink]="route()"
+  routerLinkActive
+  #rla="routerLinkActive"
+  [routerLinkActiveOptions]="{ exact: exact() }"
+  (click)="navigated.emit()"
+  class="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition"
+  [class]="
+    rla.isActive
+      ? 'bg-lime-400 font-bold text-zinc-950 shadow-xs'
+      : 'font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white'
+  "
+>
+  <ng-content />
+  <span>{{ label() }}</span>
+</a>
