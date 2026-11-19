@@ -80,7 +80,7 @@ export class OrderCreateComponent implements OnInit {
 
     const customers$ = this.authService.isAdmin()
       ? this.customerService
-          .getAll()
+          .getAll(undefined, 1, 100)
           .pipe(catchError(() => of(createEmptyPagedResult<Customer>())))
       : this.customerService.getMe().pipe(
           map((me) => {
@@ -99,7 +99,7 @@ export class OrderCreateComponent implements OnInit {
     forkJoin({
       customers: customers$,
       products: this.productService
-        .getAll()
+        .getAll(undefined, 1, 100)
         .pipe(catchError(() => of(createEmptyPagedResult<Product>()))),
     })
       .pipe(

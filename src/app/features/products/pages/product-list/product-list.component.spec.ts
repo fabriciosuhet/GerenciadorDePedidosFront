@@ -14,6 +14,7 @@ describe('ProductListComponent (Functional)', () => {
   const isAdmin = signal(true);
 
   beforeEach(async () => {
+    localStorage.clear();
     isAdmin.set(true);
     await TestBed.configureTestingModule({
       imports: [ProductListComponent],
@@ -36,6 +37,69 @@ describe('ProductListComponent (Functional)', () => {
 
   afterEach(() => {
     httpMock.verify();
+    localStorage.clear();
+  });
+
+  it('prevents native page reload on search submit and sends pageNumber/pageSize', () => {
+    const fixture = TestBed.createComponent(ProductListComponent);
+    fixture.detectChanges();
+
+    const initReq = httpMock.expectOne(
+      (r) =>
+        r.url.endsWith('/api/produto') &&
+        r.params.get('pageNumber') === '1' &&
+        r.params.get('pageSize') === '10',
+    );
+    initReq.flush({
+      items: [{ id: 1, nome: 'Mouse Gamer', preco: 199.9, estoque: 12 }],
+      totalCount: 15,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const searchInput = el.querySelector('#product-search') as HTMLInputElement;
+    searchInput.value = 'Mouse';
+    searchInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const form = el.querySelector('form')!;
+    const submitEvent = new Event('submit', { cancelable: true });
+    form.dispatchEvent(submitEvent);
+    expect(submitEvent.defaultPrevented).toBe(true);
+
+    const searchReq = httpMock.expectOne(
+      (r) =>
+        r.url.endsWith('/api/produto') &&
+        r.params.get('query') === 'Mouse' &&
+        r.params.get('pageNumber') === '1' &&
+        r.params.get('pageSize') === '10',
+    );
+    searchReq.flush({
+      items: [{ id: 1, nome: 'Mouse Gamer', preco: 199.9, estoque: 12 }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const pageSizeSelect = el.querySelector('select[aria-label="Itens por página"]') as HTMLSelectElement;
+    pageSizeSelect.value = '25';
+    pageSizeSelect.dispatchEvent(new Event('change'));
+
+    const resizedReq = httpMock.expectOne(
+      (r) =>
+        r.url.endsWith('/api/produto') &&
+        r.params.get('pageNumber') === '1' &&
+        r.params.get('pageSize') === '25',
+    );
+    resizedReq.flush({
+      items: [{ id: 1, nome: 'Mouse Gamer', preco: 199.9, estoque: 12 }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 25,
+    });
   });
 
   it('lists products and allows Admin to create a new product', () => {
@@ -68,19 +132,22 @@ describe('ProductListComponent (Functional)', () => {
     const modalForm = el.querySelectorAll('form')[1];
     modalForm.dispatchEvent(new Event('submit'));
 
-    const postReq = httpMock.expectOne((r) => r.url.endsWith('/api/produto'));
-    expect(postReq.request.method).toBe('POST');
+    const postReq = httpMock.expectOne((r) => r.url.endsWith('/api/produto') && r.method === 'POST');
     postReq.flush({ id: 2 });
 
-    httpMock.expectOne((r) => r.url.endsWith('/api/produto')).flush({
-      items: [
-        { id: 1, nome: 'Mouse Gamer', preco: 199.9, estoque: 12 },
-        { id: 2, nome: 'Headset Pro', preco: 350, estoque: 8 },
-      ],
-      totalCount: 2,
-      pageNumber: 1,
-      pageSize: 10,
-    });
+    const refreshReqs = httpMock.match((r) => r.url.endsWith('/api/produto') && r.method === 'GET');
+    expect(refreshReqs.length).toBe(2);
+    for (const r of refreshReqs) {
+      r.flush({
+        items: [
+          { id: 1, nome: 'Mouse Gamer', preco: 199.9, estoque: 12 },
+          { id: 2, nome: 'Headset Pro', preco: 350, estoque: 8 },
+        ],
+        totalCount: 2,
+        pageNumber: 1,
+        pageSize: 10,
+      });
+    }
     fixture.detectChanges();
 
     expect(el.textContent).toContain('Headset Pro');

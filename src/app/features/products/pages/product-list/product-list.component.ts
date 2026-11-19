@@ -4,12 +4,11 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  computed,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { StockAlertService } from '../../../../core/services/stock-alert.service';
@@ -38,24 +37,23 @@ export class ProductListComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly pageSize = 8;
+  protected readonly pageSize = signal(10);
   protected readonly currentPage = signal(1);
+  protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly products = signal<Product[]>([]);
   protected readonly customers = signal<Customer[]>([]);
-  protected readonly searchControl = new FormControl('', { nonNullable: true });
+
+  protected readonly searchForm = this.fb.nonNullable.group({
+    query: [''],
+  });
 
   protected readonly productModalOpen = signal(false);
   protected readonly editingProduct = signal<Product | null>(null);
   protected readonly stockModalProduct = signal<Product | null>(null);
   protected readonly deletingProduct = signal<Product | null>(null);
-
-  protected readonly paginatedProducts = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.products().slice(start, start + this.pageSize);
-  });
 
   protected readonly productForm = this.fb.nonNullable.group({
     nome: ['', [Validators.required, Validators.maxLength(255)]],
@@ -76,9 +74,10 @@ export class ProductListComponent implements OnInit {
   protected loadProducts(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
+    const query = this.searchForm.controls.query.value;
 
     this.productService
-      .getAll(this.searchControl.value)
+      .getAll(query, this.currentPage(), this.pageSize())
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -86,20 +85,38 @@ export class ProductListComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.products.set(res.items);
-          this.currentPage.set(1);
-          if (!this.searchControl.value.trim()) {
+          this.totalCount.set(res.totalCount);
+          if (!query.trim() && this.currentPage() === 1) {
             this.stockAlertService.evaluateProducts(res.items);
           }
         },
         error: (err: unknown) => {
           this.products.set([]);
+          this.totalCount.set(0);
           this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar produtos.'));
         },
       });
   }
 
+  protected searchProducts(): void {
+    this.currentPage.set(1);
+    this.loadProducts();
+  }
+
   protected clearSearch(): void {
-    this.searchControl.setValue('');
+    this.searchForm.controls.query.setValue('');
+    this.currentPage.set(1);
+    this.loadProducts();
+  }
+
+  protected onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadProducts();
+  }
+
+  protected onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
     this.loadProducts();
   }
 
@@ -145,6 +162,7 @@ export class ProductListComponent implements OnInit {
           );
           this.productModalOpen.set(false);
           this.loadProducts();
+          this.stockAlertService.checkCatalogStock();
         },
         error: (err: unknown) => {
           this.toastService.error(extractApiErrorMessage(err, 'Erro ao salvar produto.'));
@@ -162,7 +180,7 @@ export class ProductListComponent implements OnInit {
 
     if (this.customers().length === 0) {
       this.customerService
-        .getAll()
+        .getAll(undefined, 1, 100)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (res) => {
@@ -202,6 +220,7 @@ export class ProductListComponent implements OnInit {
           this.toastService.success(msg || 'Estoque atualizado!');
           this.stockModalProduct.set(null);
           this.loadProducts();
+          this.stockAlertService.checkCatalogStock();
         },
         error: (err: unknown) => {
           this.toastService.error(extractApiErrorMessage(err, 'Erro ao ajustar estoque.'));
@@ -225,6 +244,7 @@ export class ProductListComponent implements OnInit {
           this.toastService.success(msg || 'Produto removido!');
           this.deletingProduct.set(null);
           this.loadProducts();
+          this.stockAlertService.checkCatalogStock();
         },
         error: (err: unknown) => {
           this.toastService.error(extractApiErrorMessage(err, 'Erro ao excluir produto.'));

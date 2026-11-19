@@ -141,7 +141,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-zinc-100 bg-white dark:divide-zinc-800/80 dark:bg-zinc-900">
-            @for (order of paginatedOrders(); track order.id) {
+            @for (order of filteredOrders(); track order.id) {
               <tr class="transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40">
                 <td class="px-6 py-4">
                   <span
@@ -183,10 +183,12 @@
       </div>
 
       <app-pagination
-        [totalItems]="filteredOrders().length"
-        [pageSize]="pageSize"
+        [totalItems]="orderNumberFilter().trim() ? filteredOrders().length : totalCount()"
+        [pageSize]="pageSize()"
         [currentPage]="currentPage()"
-        (pageChange)="currentPage.set($event)"
+        [showPageSizeSelector]="true"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
       />
     }
   </div>

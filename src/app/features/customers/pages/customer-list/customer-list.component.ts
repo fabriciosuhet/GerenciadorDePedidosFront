@@ -3,12 +3,11 @@ import {
   Component,
   DestroyRef,
   OnInit,
-  computed,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -40,23 +39,22 @@ export class CustomerListComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly pageSize = 8;
+  protected readonly pageSize = signal(10);
   protected readonly currentPage = signal(1);
+  protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
   protected readonly saving = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly customers = signal<Customer[]>([]);
-  protected readonly searchControl = new FormControl('', { nonNullable: true });
+
+  protected readonly searchForm = this.fb.nonNullable.group({
+    query: [''],
+  });
 
   protected readonly createModalOpen = signal(false);
   protected readonly editingCustomer = signal<Customer | null>(null);
   protected readonly customerDetail = signal<CustomerDetail | null>(null);
   protected readonly deletingCustomer = signal<Customer | null>(null);
-
-  protected readonly paginatedCustomers = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.customers().slice(start, start + this.pageSize);
-  });
 
   protected readonly createForm = this.fb.nonNullable.group({
     nomeCompleto: ['', [Validators.required]],
@@ -80,7 +78,7 @@ export class CustomerListComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.customerService
-      .getAll(this.searchControl.value)
+      .getAll(this.searchForm.controls.query.value, this.currentPage(), this.pageSize())
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
@@ -88,17 +86,35 @@ export class CustomerListComponent implements OnInit {
       .subscribe({
         next: (res) => {
           this.customers.set(res.items);
-          this.currentPage.set(1);
+          this.totalCount.set(res.totalCount);
         },
         error: (err: unknown) => {
           this.customers.set([]);
+          this.totalCount.set(0);
           this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar clientes.'));
         },
       });
   }
 
+  protected searchCustomers(): void {
+    this.currentPage.set(1);
+    this.loadCustomers();
+  }
+
   protected clearSearch(): void {
-    this.searchControl.setValue('');
+    this.searchForm.controls.query.setValue('');
+    this.currentPage.set(1);
+    this.loadCustomers();
+  }
+
+  protected onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadCustomers();
+  }
+
+  protected onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
     this.loadCustomers();
   }
 

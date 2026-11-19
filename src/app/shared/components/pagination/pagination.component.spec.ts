@@ -29,4 +29,22 @@ describe('PaginationComponent', () => {
     buttons[1].click();
     expect(emitted).toEqual([2]);
   });
+
+  it('emits pageSizeChange when selector is enabled and changed', () => {
+    const fixture = TestBed.createComponent(PaginationComponent);
+    fixture.componentRef.setInput('totalItems', 50);
+    fixture.componentRef.setInput('pageSize', 10);
+    fixture.componentRef.setInput('currentPage', 1);
+    fixture.componentRef.setInput('showPageSizeSelector', true);
+    fixture.detectChanges();
+
+    const emittedSizes: number[] = [];
+    fixture.componentInstance.pageSizeChange.subscribe((size) => emittedSizes.push(size));
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector('select')!;
+    select.value = '50';
+    select.dispatchEvent(new Event('change'));
+
+    expect(emittedSizes).toEqual([50]);
+  });
 });
