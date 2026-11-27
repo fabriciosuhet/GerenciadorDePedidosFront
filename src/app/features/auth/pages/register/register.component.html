@@ -75,7 +75,7 @@
             type="text"
             formControlName="nomeCompleto"
             placeholder="Maria Silva"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           />
           @if (form.controls.nomeCompleto.touched && form.controls.nomeCompleto.invalid) {
             <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">Nome obrigatório.</p>
@@ -94,7 +94,7 @@
             type="email"
             formControlName="email"
             placeholder="maria@email.com"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           />
           @if (form.controls.email.touched && form.controls.email.invalid) {
             <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">Informe um e-mail válido.</p>
@@ -114,7 +114,7 @@
             formControlName="telefone"
             maxlength="20"
             placeholder="(11) 99999-9999"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           />
           @if (form.controls.telefone.touched && form.controls.telefone.invalid) {
             <p class="mt-1 text-xs text-rose-600 dark:text-rose-400">
@@ -136,7 +136,7 @@
             formControlName="senha"
             (input)="passwordDraft.set(form.controls.senha.value)"
             placeholder="Ex: Senha@123"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           />
           <div
             class="mt-2.5 grid grid-cols-2 gap-1.5 rounded-2xl border border-zinc-100 bg-zinc-50 p-3 font-display text-xs dark:border-zinc-800 dark:bg-zinc-950"

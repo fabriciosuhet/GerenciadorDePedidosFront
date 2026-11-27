@@ -125,7 +125,7 @@
                     type="date"
                     formControlName="dataReferencia"
                     (change)="onAnalyticsFiltersChanged()"
-                    class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 font-display text-xs text-zinc-800 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                    class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 font-display text-xs text-zinc-800 focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                   @if (analyticsForm.controls.dataReferencia.value) {
                     <button
@@ -150,7 +150,7 @@
                   id="dashboard-top-products"
                   formControlName="topProdutos"
                   (change)="onAnalyticsFiltersChanged()"
-                  class="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 font-display text-xs font-bold text-zinc-800 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  class="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 font-display text-xs font-bold text-zinc-800 focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
                 >
                   @for (opt of topProductOptions; track opt) {
                     <option [value]="opt">Top {{ opt }}</option>
