@@ -165,6 +165,15 @@
                     >
                       Detalhes
                     </button>
+                    @if (activeStatusTab() !== 'Cancelado') {
+                      <button
+                        type="button"
+                        (click)="requestCancelOrder(order.id)"
+                        class="rounded-xl border border-amber-300 px-3 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-50 dark:border-amber-700/70 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                      >
+                        Cancelar
+                      </button>
+                    }
                     @if (authService.isAdmin()) {
                       <button
                         type="button"
@@ -196,7 +205,24 @@
 
 <app-order-detail-modal
   [order]="selectedOrderDetail()"
+  [cancelling]="cancelling()"
   (closed)="selectedOrderDetail.set(null)"
+  (cancelRequested)="requestCancelOrder($event.id)"
+/>
+
+<app-confirm-dialog
+  [open]="cancellingOrderId() !== null"
+  title="Cancelar pedido"
+  [message]="
+    'Tem certeza que deseja cancelar o pedido #' +
+    (cancellingOrderId() ?? '') +
+    '? Caso já tenha sido processado, os itens serão estornados automaticamente ao estoque.'
+  "
+  confirmLabel="Confirmar cancelamento"
+  cancelLabel="Voltar"
+  [loading]="cancelling()"
+  (cancelled)="cancellingOrderId.set(null)"
+  (confirmed)="confirmCancelOrder()"
 />
 
 <app-confirm-dialog

@@ -10,7 +10,7 @@
         Movimentações de Estoque
       </h1>
       <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        Registro administrativo de entradas e saídas manuais de estoque.
+        Registro administrativo de entradas, saídas, vendas e estornos de estoque.
       </p>
     </div>
 
@@ -239,6 +239,38 @@
             {{ details.quantidade }} un.
           </dd>
         </div>
+        @if (details.motivo !== undefined) {
+          <div class="flex justify-between">
+            <dt class="text-zinc-500 dark:text-zinc-400">Motivo</dt>
+            <dd class="font-bold text-zinc-900 dark:text-white">
+              {{ reasonLabels[details.motivo] }}
+            </dd>
+          </div>
+        }
+        @if (details.pedidoId) {
+          <div class="flex justify-between">
+            <dt class="text-zinc-500 dark:text-zinc-400">Pedido vinculado</dt>
+            <dd class="font-display font-bold text-zinc-900 dark:text-white">
+              #{{ details.pedidoId }}
+            </dd>
+          </div>
+        }
+        @if (details.precoUnitario !== undefined) {
+          <div class="flex justify-between">
+            <dt class="text-zinc-500 dark:text-zinc-400">Preço unitário</dt>
+            <dd class="font-display font-semibold text-zinc-900 dark:text-white">
+              {{ details.precoUnitario | currency: 'BRL' }}
+            </dd>
+          </div>
+        }
+        @if (details.valorTotal !== undefined) {
+          <div class="flex justify-between border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
+            <dt class="text-zinc-500 dark:text-zinc-400">Valor total</dt>
+            <dd class="font-display font-extrabold text-zinc-950 dark:text-lime-400">
+              {{ details.valorTotal | currency: 'BRL' }}
+            </dd>
+          </div>
+        }
       </dl>
 
       <div class="mt-6 flex justify-end">

@@ -11,6 +11,7 @@ export class ConfirmDialogComponent {
   readonly title = input('Confirmar exclusão');
   readonly message = input('Esta ação não poderá ser desfeita.');
   readonly confirmLabel = input('Excluir');
+  readonly cancelLabel = input('Cancelar');
   readonly loading = input(false);
 
   readonly confirmed = output<void>();

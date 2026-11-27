@@ -69,11 +69,22 @@
         </span>
       </div>
 
-      <div class="mt-6 flex justify-end">
+      <div class="mt-6 flex flex-wrap items-center justify-end gap-2.5">
+        @if (detail.status !== OrderStatus.Cancelled) {
+          <button
+            type="button"
+            [disabled]="cancelling()"
+            (click)="cancelRequested.emit(detail)"
+            class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-700/70 dark:bg-amber-950/60 dark:text-amber-300 dark:hover:bg-amber-950"
+          >
+            Cancelar pedido
+          </button>
+        }
         <button
           type="button"
+          [disabled]="cancelling()"
           (click)="closed.emit()"
-          class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           Fechar
         </button>
