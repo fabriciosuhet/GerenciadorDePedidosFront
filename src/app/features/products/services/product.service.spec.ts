@@ -62,4 +62,64 @@ describe('ProductService', () => {
 
     expect(resultTypes).toEqual([StockMovementType.Addition, StockMovementType.Removal]);
   });
+
+  it('downloads stock movement report with query params and extracts filename from header', () => {
+    let downloadedName = '';
+    let downloadedSize = 0;
+
+    service
+      .downloadStockMovementReport({
+        periodo: 'Semana',
+        formato: 'Csv',
+        dataReferencia: '2026-11-27',
+      })
+      .subscribe((file) => {
+        downloadedName = file.filename;
+        downloadedSize = file.blob.size;
+      });
+
+    const req = httpMock.expectOne((r) =>
+      r.url.endsWith('/api/produto/movimentacao-estoque/relatorio'),
+    );
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    expect(req.request.params.get('periodo')).toBe('Semana');
+    expect(req.request.params.get('formato')).toBe('Csv');
+    expect(req.request.params.get('dataReferencia')).toBe('2026-11-27');
+
+    req.flush(new Blob(['col1;col2'], { type: 'text/csv' }), {
+      headers: {
+        'Content-Disposition':
+          'attachment; filename="relatorio-movimentacoes-estoque-semana-20261123-20261129.csv"',
+      },
+    });
+
+    expect(downloadedName).toBe('relatorio-movimentacoes-estoque-semana-20261123-20261129.csv');
+    expect(downloadedSize).toBeGreaterThan(0);
+  });
+
+  it('falls back to a generated filename when Content-Disposition header is absent', () => {
+    let downloadedName = '';
+
+    service
+      .downloadStockMovementReport({
+        periodo: 'Ano',
+        formato: 'Pdf',
+        dataReferencia: null,
+      })
+      .subscribe((file) => {
+        downloadedName = file.filename;
+      });
+
+    const req = httpMock.expectOne((r) =>
+      r.url.endsWith('/api/produto/movimentacao-estoque/relatorio'),
+    );
+    expect(req.request.params.get('periodo')).toBe('Ano');
+    expect(req.request.params.get('formato')).toBe('Pdf');
+    expect(req.request.params.has('dataReferencia')).toBe(false);
+
+    req.flush(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+
+    expect(downloadedName).toMatch(/^relatorio-movimentacoes-estoque-ano-\d{4}-\d{2}-\d{2}\.pdf$/);
+  });
 });

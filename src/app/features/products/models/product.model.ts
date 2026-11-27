@@ -62,3 +62,18 @@ export const STOCK_MOVEMENT_LABELS: Record<StockMovementType, string> = {
   [StockMovementType.Addition]: 'Entrada',
   [StockMovementType.Removal]: 'Saída',
 };
+
+export type StockReportPeriod = 'Semana' | 'Mes' | 'Ano';
+
+export type StockReportFormat = 'Pdf' | 'Csv';
+
+export interface StockMovementReportFilter {
+  periodo: StockReportPeriod;
+  formato: StockReportFormat;
+  dataReferencia?: string | null;
+}
+
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
