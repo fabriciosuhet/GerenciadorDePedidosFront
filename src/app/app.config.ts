@@ -5,6 +5,7 @@ import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { correlationIdInterceptor } from './core/interceptors/correlation-id.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 
@@ -14,7 +15,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor, errorInterceptor])),
+    provideHttpClient(
+      withInterceptors([
+        correlationIdInterceptor,
+        authInterceptor,
+        loadingInterceptor,
+        errorInterceptor,
+      ]),
+    ),
     { provide: LOCALE_ID, useValue: 'pt-BR' },
   ],
 };

@@ -9,11 +9,13 @@ import {
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { HealthService } from '../../../core/services/health.service';
 import { LoadingService } from '../../../core/services/loading.service';
 import { StockAlertService } from '../../../core/services/stock-alert.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { SidebarNavItemComponent } from '../sidebar-nav-item/sidebar-nav-item.component';
 import { StockAlertPopupComponent } from '../stock-alert-popup/stock-alert-popup.component';
+import { SystemHealthPopoverComponent } from '../system-health-popover/system-health-popover.component';
 
 @Component({
   selector: 'app-shell',
@@ -24,12 +26,14 @@ import { StockAlertPopupComponent } from '../stock-alert-popup/stock-alert-popup
     ReactiveFormsModule,
     SidebarNavItemComponent,
     StockAlertPopupComponent,
+    SystemHealthPopoverComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
 })
 export class ShellComponent implements OnInit {
   protected readonly authService = inject(AuthService);
+  protected readonly healthService = inject(HealthService);
   protected readonly loadingService = inject(LoadingService);
   protected readonly themeService = inject(ThemeService);
   protected readonly stockAlertService = inject(StockAlertService);
@@ -50,6 +54,7 @@ export class ShellComponent implements OnInit {
     this.stockAlertService.checkCatalogStock();
     if (this.authService.isAdmin()) {
       this.stockAlertService.refreshPendingAlertsCount();
+      this.healthService.checkReadiness();
     }
   }
 
