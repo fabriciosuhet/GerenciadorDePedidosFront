@@ -1,15 +1,18 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResult } from '../../../core/models/paged-result.model';
+import { extractFilenameFromContentDisposition } from '../../../core/utils/file-download.util';
 import {
   CreateProductPayload,
+  DownloadedFile,
   Product,
   ProductDetail,
   StockAdjustmentPayload,
   StockMovementDetail,
   StockMovementListItem,
+  StockMovementReportFilter,
   StockMovementSummary,
   UpdateProductPayload,
 } from '../models/product.model';
@@ -118,5 +121,40 @@ export class ProductService {
         ).pipe(map((items) => ({ ...paged, items })));
       }),
     );
+  }
+
+  downloadStockMovementReport(filter: StockMovementReportFilter): Observable<DownloadedFile> {
+    let params = new HttpParams()
+      .set('periodo', filter.periodo)
+      .set('formato', filter.formato);
+
+    if (filter.dataReferencia?.trim()) {
+      params = params.set('dataReferencia', filter.dataReferencia.trim());
+    }
+
+    return this.http
+      .get(`${this.baseUrl}/movimentacao-estoque/relatorio`, {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response: HttpResponse<Blob>): DownloadedFile => {
+          const blob = response.body ?? new Blob();
+          const headerFilename = extractFilenameFromContentDisposition(
+            response.headers.get('Content-Disposition'),
+          );
+          const extension = filter.formato === 'Csv' ? 'csv' : 'pdf';
+          const periodSlug = filter.periodo.toLowerCase();
+          const dateSlug =
+            filter.dataReferencia?.trim() || new Date().toISOString().slice(0, 10);
+          const fallbackFilename = `relatorio-movimentacoes-estoque-${periodSlug}-${dateSlug}.${extension}`;
+
+          return {
+            blob,
+            filename: headerFilename ?? fallbackFilename,
+          };
+        }),
+      );
   }
 }

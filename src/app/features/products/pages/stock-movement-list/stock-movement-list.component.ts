@@ -12,12 +12,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../../core/services/toast.service';
+import { triggerFileDownload } from '../../../../core/utils/file-download.util';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
+import { StockReportModalComponent } from '../../components/stock-report-modal/stock-report-modal.component';
 import {
   StockMovementDetail,
   StockMovementListItem,
+  StockMovementReportFilter,
   StockMovementType,
 } from '../../models/product.model';
 import { ProductService } from '../../services/product.service';
@@ -25,7 +28,13 @@ import { ProductService } from '../../services/product.service';
 @Component({
   selector: 'app-stock-movement-list',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, PaginationComponent, StatusBadgeComponent],
+  imports: [
+    DatePipe,
+    ReactiveFormsModule,
+    PaginationComponent,
+    StatusBadgeComponent,
+    StockReportModalComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './stock-movement-list.component.html',
 })
@@ -44,6 +53,9 @@ export class StockMovementListComponent implements OnInit {
   protected readonly movements = signal<StockMovementListItem[]>([]);
   protected readonly selectedTypeFilter = signal<StockMovementType | null>(null);
   protected readonly selectedDetail = signal<StockMovementDetail | null>(null);
+  protected readonly reportModalOpen = signal(false);
+  protected readonly exportingReport = signal(false);
+  protected readonly reportErrorMessage = signal<string | null>(null);
 
   protected readonly searchForm = this.fb.nonNullable.group({
     query: [''],
@@ -146,6 +158,45 @@ export class StockMovementListComponent implements OnInit {
           this.toastService.error(
             extractApiErrorMessage(err, 'Erro ao carregar detalhe da movimentação.'),
           );
+        },
+      });
+  }
+
+  protected openReportModal(): void {
+    this.reportErrorMessage.set(null);
+    this.reportModalOpen.set(true);
+  }
+
+  protected closeReportModal(): void {
+    if (!this.exportingReport()) {
+      this.reportModalOpen.set(false);
+      this.reportErrorMessage.set(null);
+    }
+  }
+
+  protected exportReport(filter: StockMovementReportFilter): void {
+    this.exportingReport.set(true);
+    this.reportErrorMessage.set(null);
+
+    this.productService
+      .downloadStockMovementReport(filter)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.exportingReport.set(false)),
+      )
+      .subscribe({
+        next: (file) => {
+          triggerFileDownload(file.blob, file.filename);
+          this.toastService.success('Relatório gerado e download iniciado.');
+          this.reportModalOpen.set(false);
+        },
+        error: (err: unknown) => {
+          const message = extractApiErrorMessage(
+            err,
+            'Erro ao gerar relatório de movimentações de estoque.',
+          );
+          this.reportErrorMessage.set(message);
+          this.toastService.error(message);
         },
       });
   }
