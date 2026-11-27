@@ -41,6 +41,13 @@ export interface CreateOrderPayload {
   status: OrderStatus;
 }
 
+export interface CancelOrderResponse {
+  pedidoId: number;
+  status: OrderStatus;
+  estoqueEstornado: boolean;
+  unidadesEstornadas: number;
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.Pending]: 'Pendente',
   [OrderStatus.Processed]: 'Em Preparo',

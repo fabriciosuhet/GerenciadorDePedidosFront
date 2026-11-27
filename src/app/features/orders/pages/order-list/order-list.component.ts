@@ -13,6 +13,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { StockAlertService } from '../../../../core/services/stock-alert.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -39,6 +40,7 @@ import { OrderService } from '../../services/order.service';
 export class OrderListComponent implements OnInit {
   protected readonly authService = inject(AuthService);
   private readonly orderService = inject(OrderService);
+  private readonly stockAlertService = inject(StockAlertService);
   private readonly toastService = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
@@ -48,12 +50,14 @@ export class OrderListComponent implements OnInit {
   protected readonly currentPage = signal(1);
   protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
+  protected readonly cancelling = signal(false);
   protected readonly deleting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly orders = signal<OrderSummary[]>([]);
   protected readonly activeStatusTab = signal('');
   protected readonly orderNumberFilter = signal('');
   protected readonly selectedOrderDetail = signal<OrderDetail | null>(null);
+  protected readonly cancellingOrderId = signal<number | null>(null);
   protected readonly deletingOrder = signal<OrderSummary | null>(null);
 
   protected readonly filterForm = this.fb.nonNullable.group({
@@ -165,6 +169,48 @@ export class OrderListComponent implements OnInit {
           this.toastService.error(
             extractApiErrorMessage(err, 'Não foi possível carregar os detalhes do pedido.'),
           );
+        },
+      });
+  }
+
+  protected requestCancelOrder(orderId: number): void {
+    this.cancellingOrderId.set(orderId);
+  }
+
+  protected confirmCancelOrder(): void {
+    const orderId = this.cancellingOrderId();
+    if (orderId === null) {
+      return;
+    }
+
+    this.cancelling.set(true);
+    this.orderService
+      .cancel(orderId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.cancelling.set(false)),
+      )
+      .subscribe({
+        next: (result) => {
+          const message = result.estoqueEstornado
+            ? `Pedido #${result.pedidoId} cancelado! ${result.unidadesEstornadas} unidade(s) estornada(s) ao estoque.`
+            : `Pedido #${result.pedidoId} cancelado com sucesso!`;
+          this.toastService.success(message);
+          this.cancellingOrderId.set(null);
+
+          const currentDetail = this.selectedOrderDetail();
+          if (currentDetail?.id === result.pedidoId) {
+            this.selectedOrderDetail.set({ ...currentDetail, status: result.status });
+          }
+
+          this.loadOrders();
+          if (result.estoqueEstornado) {
+            this.stockAlertService.checkCatalogStock();
+          }
+        },
+        error: (err: unknown) => {
+          this.cancellingOrderId.set(null);
+          this.toastService.error(extractApiErrorMessage(err, 'Erro ao cancelar pedido.'));
         },
       });
   }

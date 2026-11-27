@@ -3,6 +3,12 @@ export enum StockMovementType {
   Removal = 1,
 }
 
+export enum StockMovementReason {
+  ManualAdjustment = 0,
+  OrderSale = 1,
+  CancellationRefund = 2,
+}
+
 export interface Product {
   id: number;
   nome: string;
@@ -47,13 +53,21 @@ export interface StockMovementDetail {
   produtoNome: string;
   clienteNome: string;
   quantidade: number;
+  precoUnitario?: number;
+  valorTotal?: number;
   tipoMovimentacao: StockMovementType;
+  motivo?: StockMovementReason;
+  pedidoId?: number | null;
   data: string;
 }
 
 export interface StockMovementListItem extends StockMovementSummary {
   tipoMovimentacao: StockMovementType | null;
   quantidade?: number;
+  precoUnitario?: number;
+  valorTotal?: number;
+  motivo?: StockMovementReason;
+  pedidoId?: number | null;
   clienteNome?: string;
   data?: string;
 }
@@ -61,6 +75,12 @@ export interface StockMovementListItem extends StockMovementSummary {
 export const STOCK_MOVEMENT_LABELS: Record<StockMovementType, string> = {
   [StockMovementType.Addition]: 'Entrada',
   [StockMovementType.Removal]: 'Saída',
+};
+
+export const STOCK_MOVEMENT_REASON_LABELS: Record<StockMovementReason, string> = {
+  [StockMovementReason.ManualAdjustment]: 'Ajuste manual',
+  [StockMovementReason.OrderSale]: 'Venda de pedido',
+  [StockMovementReason.CancellationRefund]: 'Estorno de cancelamento',
 };
 
 export type StockReportPeriod = 'Semana' | 'Mes' | 'Ano';

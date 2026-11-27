@@ -3,7 +3,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PagedResult } from '../../../core/models/paged-result.model';
-import { CreateOrderPayload, OrderDetail, OrderSummary } from '../models/order.model';
+import {
+  CancelOrderResponse,
+  CreateOrderPayload,
+  OrderDetail,
+  OrderSummary,
+} from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
@@ -26,6 +31,10 @@ export class OrderService {
 
   create(payload: CreateOrderPayload): Observable<{ id: number }> {
     return this.http.post<{ id: number }>(this.baseUrl, payload);
+  }
+
+  cancel(id: number): Observable<CancelOrderResponse> {
+    return this.http.patch<CancelOrderResponse>(`${this.baseUrl}/${id}/cancelar`, {});
   }
 
   delete(id: number): Observable<string> {

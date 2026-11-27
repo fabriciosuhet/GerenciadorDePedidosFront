@@ -109,5 +109,93 @@ describe('OrderListComponent (Functional)', () => {
       b.textContent?.includes('Excluir'),
     );
     expect(deleteBtn).toBeUndefined();
+
+    const cancelBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Cancelar',
+    );
+    expect(cancelBtn).toBeDefined();
+  });
+
+  it('cancels an order from the detail modal, updates status and refreshes orders and stock alerts', () => {
+    const fixture = TestBed.createComponent(OrderListComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [{ id: 101, dataPedido: '2026-11-19T10:00:00Z', total: 500 }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const detailsBtn = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Detalhes'),
+    )!;
+    detailsBtn.click();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido/101')).flush({
+      id: 101,
+      dataPedido: '2026-11-19T10:00:00Z',
+      total: 500,
+      clienteId: 'guid-1',
+      clienteNome: 'Maria Silva',
+      status: OrderStatus.Processed,
+      itensPedidos: [
+        {
+          id: 1,
+          produtoId: 5,
+          produtoNome: 'Teclado',
+          quantidade: 2,
+          precoUnitario: 250,
+          total: 500,
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const cancelFromModalBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Cancelar pedido',
+    )!;
+    expect(cancelFromModalBtn).toBeDefined();
+    cancelFromModalBtn.click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Confirmar cancelamento');
+
+    const confirmBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Confirmar cancelamento',
+    )!;
+    confirmBtn.click();
+
+    const cancelReq = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/101/cancelar'));
+    expect(cancelReq.request.method).toBe('PATCH');
+    cancelReq.flush({
+      pedidoId: 101,
+      status: OrderStatus.Cancelled,
+      estoqueEstornado: true,
+      unidadesEstornadas: 2,
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [{ id: 101, dataPedido: '2026-11-19T10:00:00Z', total: 500 }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/produto')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 100,
+    });
+
+    fixture.detectChanges();
+
+    const cancelAfterBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Cancelar pedido',
+    );
+    expect(cancelAfterBtn).toBeUndefined();
   });
 });

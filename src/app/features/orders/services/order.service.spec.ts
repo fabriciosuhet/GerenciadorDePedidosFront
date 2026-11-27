@@ -45,4 +45,22 @@ describe('OrderService', () => {
     expect(req.request.method).toBe('POST');
     req.flush({ id: 10 });
   });
+
+  it('sends PATCH request to cancel an order and returns refund summary', () => {
+    service.cancel(42).subscribe((res) => {
+      expect(res.pedidoId).toBe(42);
+      expect(res.status).toBe(OrderStatus.Cancelled);
+      expect(res.estoqueEstornado).toBe(true);
+      expect(res.unidadesEstornadas).toBe(5);
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/42/cancelar'));
+    expect(req.request.method).toBe('PATCH');
+    req.flush({
+      pedidoId: 42,
+      status: OrderStatus.Cancelled,
+      estoqueEstornado: true,
+      unidadesEstornadas: 5,
+    });
+  });
 });

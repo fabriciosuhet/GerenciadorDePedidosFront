@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,8 +18,10 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { StockReportModalComponent } from '../../components/stock-report-modal/stock-report-modal.component';
 import {
+  STOCK_MOVEMENT_REASON_LABELS,
   StockMovementDetail,
   StockMovementListItem,
+  StockMovementReason,
   StockMovementReportFilter,
   StockMovementType,
 } from '../../models/product.model';
@@ -29,6 +31,7 @@ import { ProductService } from '../../services/product.service';
   selector: 'app-stock-movement-list',
   standalone: true,
   imports: [
+    CurrencyPipe,
     DatePipe,
     ReactiveFormsModule,
     PaginationComponent,
@@ -40,6 +43,8 @@ import { ProductService } from '../../services/product.service';
 })
 export class StockMovementListComponent implements OnInit {
   protected readonly StockMovementType = StockMovementType;
+  protected readonly StockMovementReason = StockMovementReason;
+  protected readonly reasonLabels = STOCK_MOVEMENT_REASON_LABELS;
   private readonly productService = inject(ProductService);
   private readonly toastService = inject(ToastService);
   private readonly fb = inject(FormBuilder);
@@ -143,6 +148,10 @@ export class StockMovementListComponent implements OnInit {
         produtoNome: item.produtoNome,
         tipoMovimentacao: item.tipoMovimentacao,
         quantidade: item.quantidade,
+        precoUnitario: item.precoUnitario,
+        valorTotal: item.valorTotal,
+        motivo: item.motivo,
+        pedidoId: item.pedidoId,
         clienteNome: item.clienteNome,
         data: item.data,
       });

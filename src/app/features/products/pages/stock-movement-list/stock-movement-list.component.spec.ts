@@ -1,9 +1,14 @@
+import { registerLocaleData } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import localePt from '@angular/common/locales/pt';
+import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
-import { StockMovementType } from '../../models/product.model';
+import { StockMovementReason, StockMovementType } from '../../models/product.model';
 import { StockMovementListComponent } from './stock-movement-list.component';
+
+registerLocaleData(localePt);
 
 describe('StockMovementListComponent (Functional)', () => {
   let httpMock: HttpTestingController;
@@ -11,7 +16,11 @@ describe('StockMovementListComponent (Functional)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StockMovementListComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LOCALE_ID, useValue: 'pt-BR' },
+      ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
@@ -167,5 +176,45 @@ describe('StockMovementListComponent (Functional)', () => {
 
     expect(el.querySelector('[role="dialog"]')).not.toBeNull();
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('permissão de Administrador');
+  });
+
+  it('displays reason, linked order and financial snapshot in movement detail modal', () => {
+    const fixture = TestBed.createComponent(StockMovementListComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/produto/movimentacao-estoque')).flush({
+      items: [{ id: 9, produtoId: 10, produtoNome: 'Monitor' }],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/produto/movimentacao-estoque/9')).flush({
+      id: 9,
+      produtoId: 10,
+      produtoNome: 'Monitor',
+      clienteNome: 'Maria Silva',
+      quantidade: 2,
+      precoUnitario: 950,
+      valorTotal: 1900,
+      tipoMovimentacao: StockMovementType.Addition,
+      motivo: StockMovementReason.CancellationRefund,
+      pedidoId: 55,
+      data: '2026-11-27T16:00:00Z',
+    });
+
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const detailsBtn = Array.from(el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Ver detalhes'),
+    )!;
+    detailsBtn.click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Estorno de cancelamento');
+    expect(el.textContent).toContain('#55');
+    expect(el.textContent).toContain('950,00');
+    expect(el.textContent).toContain('1.900,00');
   });
 });
