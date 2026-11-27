@@ -151,4 +151,67 @@ describe('DashboardComponent (Functional)', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('4 baixo');
   });
+
+  it('filters dashboard analytics by period and renders Ticket Médio, Taxa de Cancelamento and Top Produtos', () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/cliente/me')).flush({
+      nomeCompleto: 'Admin',
+      telefone: '11999990000',
+      pedidos: [],
+    });
+    httpMock.expectOne((r) => r.url.endsWith('/api/dashboard')).flush({
+      totalClientes: 5,
+      totalProdutos: 10,
+      produtosComEstoqueBaixo: 1,
+      totalPedidos: 10,
+      pedidosPendentes: 1,
+      pedidosConcluidos: 8,
+      pedidosCancelados: 1,
+      faturamentoTotalConcluido: 4000,
+      ticketMedio: 500,
+      taxaCancelamentoPercentual: 10,
+      topProdutos: [],
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const monthBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Mês',
+    )!;
+    monthBtn.click();
+
+    const periodReq = httpMock.expectOne(
+      (r) => r.url.endsWith('/api/dashboard') && r.params.get('periodo') === 'Mes',
+    );
+    periodReq.flush({
+      totalClientes: 5,
+      totalProdutos: 10,
+      produtosComEstoqueBaixo: 1,
+      totalPedidos: 4,
+      pedidosPendentes: 0,
+      pedidosConcluidos: 3,
+      pedidosCancelados: 1,
+      faturamentoTotalConcluido: 2700,
+      ticketMedio: 900,
+      taxaCancelamentoPercentual: 25,
+      periodo: 'Mes',
+      dataInicio: '2026-11-01T00:00:00Z',
+      dataFim: '2026-11-30T23:59:59Z',
+      topProdutos: [
+        {
+          produtoId: 12,
+          produtoNome: 'Monitor Ultrawide',
+          quantidadeVendida: 3,
+          faturamentoTotal: 2700,
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Monitor Ultrawide');
+    expect(el.textContent).toContain('900,00');
+    expect(el.textContent).toContain('25,0%');
+  });
 });

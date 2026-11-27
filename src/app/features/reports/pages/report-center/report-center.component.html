@@ -1,0 +1,211 @@
+<div class="space-y-6">
+  <div>
+    <span
+      class="inline-block rounded-lg bg-lime-400/20 px-2.5 py-0.5 font-display text-xs font-bold text-lime-900 dark:bg-lime-400/15 dark:text-lime-300"
+    >
+      RELATÓRIOS EXECUTIVOS
+    </span>
+    <h1 class="mt-1.5 text-2xl font-extrabold tracking-tight text-zinc-950 dark:text-white">
+      Central de Relatórios
+    </h1>
+    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+      Defina o período de referência uma única vez e exporte os consolidados de vendas e estoque em PDF ou CSV.
+    </p>
+  </div>
+
+  <section
+    class="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+  >
+    <form [formGroup]="filterForm" class="space-y-5">
+      <fieldset class="space-y-2.5">
+        <legend class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          Período de apuração
+        </legend>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          @for (option of periodOptions; track option.value) {
+            <button
+              type="button"
+              (click)="selectPeriod(option.value)"
+              [disabled]="downloadingKey() !== null"
+              [attr.aria-pressed]="filterForm.controls.periodo.value === option.value"
+              class="flex flex-col rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60"
+              [class]="
+                filterForm.controls.periodo.value === option.value
+                  ? 'border-zinc-950 bg-zinc-950 text-white shadow-xs dark:border-lime-400 dark:bg-lime-400/15 dark:text-white'
+                  : 'border-zinc-200 bg-zinc-50/70 text-zinc-800 hover:border-zinc-300 hover:bg-zinc-100/80 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:border-zinc-700'
+              "
+            >
+              <span class="text-sm font-bold">{{ option.label }}</span>
+              <span
+                class="mt-1 text-xs leading-snug"
+                [class]="
+                  filterForm.controls.periodo.value === option.value
+                    ? 'text-zinc-300 dark:text-lime-200/80'
+                    : 'text-zinc-500 dark:text-zinc-400'
+                "
+              >
+                {{ option.description }}
+              </span>
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <div class="max-w-sm space-y-1.5">
+        <div class="flex items-center justify-between">
+          <label
+            for="report-center-date"
+            class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
+          >
+            Data de referência (opcional)
+          </label>
+          @if (filterForm.controls.dataReferencia.value) {
+            <button
+              type="button"
+              (click)="clearReferenceDate()"
+              class="text-xs font-semibold text-zinc-500 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-white"
+            >
+              Usar data atual
+            </button>
+          }
+        </div>
+        <input
+          id="report-center-date"
+          type="date"
+          formControlName="dataReferencia"
+          class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+        />
+        <p class="text-xs text-zinc-500 dark:text-zinc-400">
+          Deixe vazio para apurar a partir da data de hoje.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  @if (errorMessage(); as error) {
+    <div
+      role="alert"
+      class="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/60 dark:text-rose-300"
+    >
+      {{ error }}
+    </div>
+  }
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <article
+      class="flex flex-col justify-between rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <div>
+        <div class="flex items-center justify-between gap-3">
+          <span
+            class="inline-flex rounded-xl bg-emerald-500/15 px-3 py-1 font-display text-xs font-bold text-emerald-700 dark:text-emerald-300"
+          >
+            COMERCIAL & VENDAS
+          </span>
+          <span class="font-display text-xs text-zinc-400 dark:text-zinc-500">
+            GET /api/pedido/relatorio
+          </span>
+        </div>
+
+        <h2 class="mt-4 text-lg font-extrabold text-zinc-950 dark:text-white">
+          Relatório de Vendas e Pedidos
+        </h2>
+        <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+          Consolidado executivo do desempenho comercial do período selecionado.
+        </p>
+
+        <ul class="mt-4 space-y-2 text-xs text-zinc-600 dark:text-zinc-300">
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-lime-400"></span>
+            Faturamento concluído, valor cancelado, ticket médio e taxa de cancelamento
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-lime-400"></span>
+            Ranking de Top Produtos com participação percentual no faturamento
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-lime-400"></span>
+            Ranking de Clientes Mais Ativos e lista detalhada de pedidos
+          </li>
+        </ul>
+      </div>
+
+      <div class="mt-6 flex flex-wrap gap-2.5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+        <button
+          type="button"
+          [disabled]="downloadingKey() !== null"
+          (click)="downloadReport('sales', 'Pdf')"
+          class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-lime-400 px-4 py-2.5 text-sm font-bold text-zinc-950 shadow-xs transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {{ isDownloading('sales', 'Pdf') ? 'Gerando PDF...' : 'Baixar PDF' }}
+        </button>
+        <button
+          type="button"
+          [disabled]="downloadingKey() !== null"
+          (click)="downloadReport('sales', 'Csv')"
+          class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        >
+          {{ isDownloading('sales', 'Csv') ? 'Gerando CSV...' : 'Baixar CSV' }}
+        </button>
+      </div>
+    </article>
+
+    <article
+      class="flex flex-col justify-between rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <div>
+        <div class="flex items-center justify-between gap-3">
+          <span
+            class="inline-flex rounded-xl bg-amber-400/20 px-3 py-1 font-display text-xs font-bold text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"
+          >
+            AUDITORIA & ESTOQUE
+          </span>
+          <span class="font-display text-xs text-zinc-400 dark:text-zinc-500">
+            GET /api/produto/movimentacao-estoque/relatorio
+          </span>
+        </div>
+
+        <h2 class="mt-4 text-lg font-extrabold text-zinc-950 dark:text-white">
+          Relatório de Movimentações de Estoque
+        </h2>
+        <p class="mt-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+          Auditoria financeira e quantitativa de entradas, saídas, vendas e estornos.
+        </p>
+
+        <ul class="mt-4 space-y-2 text-xs text-zinc-600 dark:text-zinc-300">
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+            Resumo do período com unidades adicionadas, removidas e saldo financeiro
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+            Consolidação por produto com estoque atual e valor total movimentado
+          </li>
+          <li class="flex items-center gap-2">
+            <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+            Histórico detalhado com snapshot de preço unitário, motivo e pedido vinculado
+          </li>
+        </ul>
+      </div>
+
+      <div class="mt-6 flex flex-wrap gap-2.5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+        <button
+          type="button"
+          [disabled]="downloadingKey() !== null"
+          (click)="downloadReport('stock', 'Pdf')"
+          class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-lime-400 dark:text-zinc-950 dark:hover:bg-lime-300"
+        >
+          {{ isDownloading('stock', 'Pdf') ? 'Gerando PDF...' : 'Baixar PDF' }}
+        </button>
+        <button
+          type="button"
+          [disabled]="downloadingKey() !== null"
+          (click)="downloadReport('stock', 'Csv')"
+          class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        >
+          {{ isDownloading('stock', 'Csv') ? 'Gerando CSV...' : 'Baixar CSV' }}
+        </button>
+      </div>
+    </article>
+  </div>
+</div>

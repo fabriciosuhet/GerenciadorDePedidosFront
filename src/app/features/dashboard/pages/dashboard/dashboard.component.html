@@ -30,6 +30,14 @@
       </div>
 
       <div class="flex flex-wrap gap-3">
+        @if (authService.isAdmin()) {
+          <a
+            routerLink="/reports"
+            class="inline-flex items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-800"
+          >
+            Central de Relatórios
+          </a>
+        }
         <a
           routerLink="/products"
           class="inline-flex items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-800"
@@ -47,8 +55,8 @@
   </section>
 
   @if (loading()) {
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      @for (item of [1, 2, 3, 4]; track item) {
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (item of [1, 2, 3, 4, 5, 6]; track item) {
         <div
           class="h-36 animate-pulse rounded-3xl border border-zinc-200/80 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900"
         ></div>
@@ -70,7 +78,113 @@
     </div>
   } @else {
     @if (authService.isAdmin() && summary(); as stats) {
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section
+        class="space-y-4 rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+      >
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Período:
+            </span>
+            @for (tab of periodTabs; track tab.label) {
+              <button
+                type="button"
+                (click)="selectPeriod(tab.value)"
+                [disabled]="refreshingAnalytics()"
+                class="rounded-full border px-3.5 py-1.5 text-xs font-bold transition disabled:opacity-60"
+                [class]="
+                  selectedPeriod() === tab.value
+                    ? 'border-zinc-950 bg-zinc-950 text-white dark:border-lime-400 dark:bg-lime-400 dark:text-zinc-950'
+                    : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                "
+              >
+                {{ tab.label }}
+              </button>
+            }
+
+            @if (stats.dataInicio && stats.dataFim) {
+              <span
+                class="rounded-full bg-lime-400/20 px-3 py-1 font-display text-xs font-semibold text-lime-900 dark:bg-lime-400/15 dark:text-lime-300"
+              >
+                {{ stats.dataInicio | date: 'dd/MM/yyyy' }} — {{ stats.dataFim | date: 'dd/MM/yyyy' }}
+              </span>
+            }
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <form
+              [formGroup]="analyticsForm"
+              class="flex flex-wrap items-center gap-2.5"
+              (ngSubmit)="onAnalyticsFiltersChanged()"
+            >
+              @if (selectedPeriod() !== null) {
+                <div class="flex items-center gap-1.5">
+                  <label for="dashboard-ref-date" class="sr-only">Data de referência</label>
+                  <input
+                    id="dashboard-ref-date"
+                    type="date"
+                    formControlName="dataReferencia"
+                    (change)="onAnalyticsFiltersChanged()"
+                    class="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-1.5 font-display text-xs text-zinc-800 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                  />
+                  @if (analyticsForm.controls.dataReferencia.value) {
+                    <button
+                      type="button"
+                      (click)="clearReferenceDate()"
+                      class="rounded-xl border border-zinc-200 px-2.5 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                      Hoje
+                    </button>
+                  }
+                </div>
+              }
+
+              <div class="flex items-center gap-1.5">
+                <label
+                  for="dashboard-top-products"
+                  class="font-display text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500"
+                >
+                  Ranking:
+                </label>
+                <select
+                  id="dashboard-top-products"
+                  formControlName="topProdutos"
+                  (change)="onAnalyticsFiltersChanged()"
+                  class="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 font-display text-xs font-bold text-zinc-800 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  @for (opt of topProductOptions; track opt) {
+                    <option [value]="opt">Top {{ opt }}</option>
+                  }
+                </select>
+              </div>
+            </form>
+
+            <div class="flex items-center gap-1.5 border-l border-zinc-200 pl-2.5 dark:border-zinc-800">
+              <button
+                type="button"
+                [disabled]="exportingFormat() !== null"
+                (click)="exportSalesReport('Pdf')"
+                class="inline-flex items-center gap-1 rounded-xl bg-lime-400 px-3 py-1.5 text-xs font-bold text-zinc-950 transition hover:bg-lime-300 disabled:opacity-50"
+              >
+                {{ exportingFormat() === 'Pdf' ? 'Gerando...' : 'Vendas PDF' }}
+              </button>
+              <button
+                type="button"
+                [disabled]="exportingFormat() !== null"
+                (click)="exportSalesReport('Csv')"
+                class="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                {{ exportingFormat() === 'Csv' ? 'Gerando...' : 'CSV' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div
+        class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        [class.opacity-60]="refreshingAnalytics()"
+      >
         <div
           class="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
         >
@@ -109,6 +223,55 @@
             {{ stats.faturamentoTotalConcluido | currency: 'BRL' }}
           </p>
           <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Soma dos pedidos concluídos</p>
+        </div>
+
+        <div
+          class="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Ticket Médio
+            </span>
+            <span
+              class="rounded-lg bg-zinc-100 px-2 py-0.5 font-display text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            >
+              Média
+            </span>
+          </div>
+          <p class="mt-4 font-display text-3xl font-extrabold tabular-nums text-zinc-950 dark:text-white">
+            {{ (stats.ticketMedio ?? 0) | currency: 'BRL' }}
+          </p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            Valor médio por pedido concluído
+          </p>
+        </div>
+
+        <div
+          class="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Taxa de Cancelamento
+            </span>
+            <span
+              class="rounded-lg px-2 py-0.5 font-display text-xs font-bold"
+              [class]="
+                (stats.taxaCancelamentoPercentual ?? 0) >= 20
+                  ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
+                  : (stats.taxaCancelamentoPercentual ?? 0) > 0
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
+                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300'
+              "
+            >
+              {{ stats.pedidosCancelados }} canc.
+            </span>
+          </div>
+          <p class="mt-4 font-display text-3xl font-extrabold tabular-nums text-zinc-950 dark:text-white">
+            {{ (stats.taxaCancelamentoPercentual ?? 0) | number: '1.1-2' }}%
+          </p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            Percentual de pedidos cancelados no recorte
+          </p>
         </div>
 
         <div
@@ -156,6 +319,72 @@
           <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Contas registradas</p>
         </div>
       </div>
+
+      <section
+        class="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+      >
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-6 py-5 dark:border-zinc-800"
+        >
+          <div>
+            <h2 class="text-base font-bold text-zinc-950 dark:text-white">
+              Top Produtos por Faturamento
+            </h2>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400">
+              Ranking consolidado dos itens mais vendidos no período selecionado
+            </p>
+          </div>
+          <a
+            routerLink="/reports"
+            class="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          >
+            Relatório completo →
+          </a>
+        </div>
+
+        @if (topProducts().length === 0) {
+          <p class="px-6 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            Nenhuma venda concluída registrada para compor o ranking neste período.
+          </p>
+        } @else {
+          <div class="divide-y divide-zinc-100 dark:divide-zinc-800/80">
+            @for (prod of topProducts(); track prod.produtoId; let idx = $index) {
+              <div class="space-y-2 px-6 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-display text-xs font-extrabold"
+                      [class]="
+                        idx === 0
+                          ? 'bg-lime-400 text-zinc-950'
+                          : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      "
+                    >
+                      #{{ idx + 1 }}
+                    </span>
+                    <div>
+                      <p class="font-bold text-zinc-900 dark:text-white">{{ prod.produtoNome }}</p>
+                      <p class="font-display text-xs text-zinc-500 dark:text-zinc-400">
+                        SKU #{{ prod.produtoId }} • {{ prod.quantidadeVendida }} un. vendida(s)
+                      </p>
+                    </div>
+                  </div>
+                  <span class="font-display font-extrabold text-zinc-950 dark:text-lime-400">
+                    {{ prod.faturamentoTotal | currency: 'BRL' }}
+                  </span>
+                </div>
+
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <div
+                    class="h-full rounded-full bg-lime-400 transition-all"
+                    [style.width.%]="calculateRevenueShare(prod.faturamentoTotal)"
+                  ></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
     } @else {
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div

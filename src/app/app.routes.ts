@@ -45,6 +45,12 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/customers/customers.routes').then((m) => m.CUSTOMERS_ROUTES),
       },
+      {
+        path: 'reports',
+        canActivate: [adminGuard],
+        loadChildren: () =>
+          import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),
+      },
     ],
   },
   {
