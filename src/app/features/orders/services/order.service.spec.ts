@@ -63,4 +63,26 @@ describe('OrderService', () => {
       unidadesEstornadas: 5,
     });
   });
+
+  it('downloads sales report from GET /api/pedido/relatorio with query params', () => {
+    let filename = '';
+    service
+      .downloadSalesReport({ periodo: 'Mes', formato: 'Pdf', dataReferencia: '2026-11-27' })
+      .subscribe((file) => {
+        filename = file.filename;
+      });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/relatorio'));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    expect(req.request.params.get('periodo')).toBe('Mes');
+    expect(req.request.params.get('formato')).toBe('Pdf');
+    expect(req.request.params.get('dataReferencia')).toBe('2026-11-27');
+
+    req.flush(new Blob(['%PDF-1.4'], { type: 'application/pdf' }), {
+      headers: { 'Content-Disposition': 'attachment; filename="relatorio-vendas-mes.pdf"' },
+    });
+
+    expect(filename).toBe('relatorio-vendas-mes.pdf');
+  });
 });

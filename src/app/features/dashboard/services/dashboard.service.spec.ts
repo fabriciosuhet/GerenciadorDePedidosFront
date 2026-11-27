@@ -43,4 +43,28 @@ describe('DashboardService', () => {
 
     expect(result).toEqual(mockSummary);
   });
+
+  it('sends periodo, dataReferencia and topProdutos query params when provided', () => {
+    service
+      .getSummary({ periodo: 'Mes', dataReferencia: '2026-11-27', topProdutos: 10 })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/api/dashboard'));
+    expect(req.request.params.get('periodo')).toBe('Mes');
+    expect(req.request.params.get('dataReferencia')).toBe('2026-11-27');
+    expect(req.request.params.get('topProdutos')).toBe('10');
+    req.flush({
+      totalClientes: 5,
+      totalProdutos: 10,
+      produtosComEstoqueBaixo: 1,
+      totalPedidos: 12,
+      pedidosPendentes: 1,
+      pedidosConcluidos: 10,
+      pedidosCancelados: 1,
+      faturamentoTotalConcluido: 5000,
+      ticketMedio: 500,
+      taxaCancelamentoPercentual: 8.33,
+      topProdutos: [],
+    });
+  });
 });
