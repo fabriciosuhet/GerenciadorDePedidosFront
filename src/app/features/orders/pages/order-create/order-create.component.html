@@ -42,7 +42,7 @@
           <select
             id="order-customer"
             formControlName="clienteId"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-2.5 text-sm text-zinc-900 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-2.5 text-sm text-zinc-900 focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           >
             <option value="">Selecione um cliente...</option>
             @for (customer of customers(); track customer.id) {
@@ -68,7 +68,7 @@
           <select
             id="order-status"
             formControlName="status"
-            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-2.5 text-sm text-zinc-900 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+            class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-2.5 text-sm text-zinc-900 focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
           >
             @for (st of statusOptions; track st.value) {
               <option [ngValue]="st.value">{{ st.label }}</option>
