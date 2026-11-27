@@ -199,6 +199,15 @@
           + Novo Pedido
         </a>
 
+        @if (authService.isAdmin()) {
+          <app-system-health-popover
+            [report]="healthService.report()"
+            [loading]="healthService.loading()"
+            [errorMessage]="healthService.errorMessage()"
+            (refreshRequested)="healthService.checkReadiness()"
+          />
+        }
+
         <button
           type="button"
           (click)="themeService.toggleTheme()"
