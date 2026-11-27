@@ -26,6 +26,7 @@ export interface CreateProductPayload {
   nome: string;
   preco: number;
   estoque: number;
+  estoqueMinimo?: number;
 }
 
 export interface UpdateProductPayload {
@@ -33,6 +34,7 @@ export interface UpdateProductPayload {
   nome: string;
   preco: number;
   estoque: number;
+  estoqueMinimo?: number | null;
 }
 
 export interface StockAdjustmentPayload {
@@ -96,4 +98,16 @@ export interface StockMovementReportFilter {
 export interface DownloadedFile {
   blob: Blob;
   filename: string;
+}
+
+export interface StockAlertRecord {
+  id: number;
+  produtoId: number;
+  produtoNome: string;
+  estoqueAtual: number;
+  estoqueMinimo: number;
+  pedidoId: number | null;
+  resolvido: boolean;
+  criadoEm: string;
+  resolvidoEm: string | null;
 }

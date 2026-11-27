@@ -41,4 +41,17 @@ describe('StockAlertPopupComponent', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelector('aside')).toBeNull();
   });
+
+  it('shows link to alerts center when showAlertsCenterLink is true', () => {
+    const fixture = TestBed.createComponent(StockAlertPopupComponent);
+    fixture.componentRef.setInput('items', [
+      { id: 1, name: 'Teclado', currentStock: 2, referenceCapacity: 100, percentage: 2 },
+    ]);
+    fixture.componentRef.setInput('showAlertsCenterLink', true);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const links = Array.from(el.querySelectorAll('a'));
+    expect(links.some((a) => a.getAttribute('href') === '/products/alerts')).toBe(true);
+  });
 });

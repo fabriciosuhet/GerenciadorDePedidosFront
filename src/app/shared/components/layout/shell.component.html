@@ -101,6 +101,16 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
             </svg>
           </app-sidebar-nav-item>
+          <app-sidebar-nav-item
+            route="/products/alerts"
+            label="Alertas de Estoque"
+            [badge]="stockAlertService.pendingBackendAlertCount()"
+            (navigated)="mobileMenuOpen.set(false)"
+          >
+            <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+          </app-sidebar-nav-item>
         </div>
       }
     </nav>
@@ -231,6 +241,7 @@
 
   <app-stock-alert-popup
     [items]="stockAlertService.visibleAlerts()"
+    [showAlertsCenterLink]="authService.isAdmin()"
     (dismissed)="stockAlertService.dismiss()"
   />
 </div>

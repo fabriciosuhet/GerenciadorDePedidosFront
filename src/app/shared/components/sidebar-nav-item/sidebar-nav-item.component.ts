@@ -12,5 +12,6 @@ export class SidebarNavItemComponent {
   readonly route = input.required<string>();
   readonly label = input.required<string>();
   readonly exact = input(false);
+  readonly badge = input<number | null>(null);
   readonly navigated = output<void>();
 }

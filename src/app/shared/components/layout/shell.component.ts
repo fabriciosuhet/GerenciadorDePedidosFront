@@ -48,6 +48,9 @@ export class ShellComponent implements OnInit {
 
   ngOnInit(): void {
     this.stockAlertService.checkCatalogStock();
+    if (this.authService.isAdmin()) {
+      this.stockAlertService.refreshPendingAlertsCount();
+    }
   }
 
   protected onHeaderSearch(): void {

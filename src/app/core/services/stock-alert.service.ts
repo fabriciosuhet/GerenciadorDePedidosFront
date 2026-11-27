@@ -21,8 +21,10 @@ export class StockAlertService {
 
   private readonly alertsSignal = signal<StockAlertItem[]>([]);
   private readonly dismissedSignatureSignal = signal<string | null>(null);
+  private readonly pendingBackendAlertCountSignal = signal(0);
 
   readonly alerts = this.alertsSignal.asReadonly();
+  readonly pendingBackendAlertCount = this.pendingBackendAlertCountSignal.asReadonly();
 
   readonly alertSignature = computed(() =>
     this.alertsSignal()
@@ -95,6 +97,24 @@ export class StockAlertService {
 
   dismiss(): void {
     this.dismissedSignatureSignal.set(this.alertSignature());
+  }
+
+  refreshPendingAlertsCount(): void {
+    this.productService
+      .getStockAlerts(true)
+      .pipe(
+        take(1),
+        catchError(() => of(null)),
+      )
+      .subscribe((alerts) => {
+        if (alerts) {
+          this.pendingBackendAlertCountSignal.set(alerts.length);
+        }
+      });
+  }
+
+  setPendingBackendAlertCount(count: number): void {
+    this.pendingBackendAlertCountSignal.set(Math.max(0, count));
   }
 
   private loadPeaks(): Record<string, number> {

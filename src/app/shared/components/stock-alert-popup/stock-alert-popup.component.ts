@@ -11,5 +11,6 @@ import { StockAlertItem } from '../../../core/services/stock-alert.service';
 })
 export class StockAlertPopupComponent {
   readonly items = input.required<StockAlertItem[]>();
+  readonly showAlertsCenterLink = input<boolean>(false);
   readonly dismissed = output<void>();
 }
