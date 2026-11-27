@@ -122,4 +122,45 @@ describe('ProductService', () => {
 
     expect(downloadedName).toMatch(/^relatorio-movimentacoes-estoque-ano-\d{4}-\d{2}-\d{2}\.pdf$/);
   });
+
+  it('fetches stock alerts with apenasPendentes query param and resolves an alert via PATCH', () => {
+    let alertCount = 0;
+
+    service.getStockAlerts(true).subscribe((alerts) => {
+      alertCount = alerts.length;
+    });
+
+    const getReq = httpMock.expectOne(
+      (r) =>
+        r.url.endsWith('/api/produto/alertas-estoque') &&
+        r.params.get('apenasPendentes') === 'true',
+    );
+    expect(getReq.request.method).toBe('GET');
+    getReq.flush([
+      {
+        id: 1,
+        produtoId: 5,
+        produtoNome: 'Mouse',
+        estoqueAtual: 2,
+        estoqueMinimo: 5,
+        pedidoId: null,
+        resolvido: false,
+        criadoEm: '2026-11-27T15:00:00Z',
+        resolvidoEm: null,
+      },
+    ]);
+    expect(alertCount).toBe(1);
+
+    let resolved = false;
+    service.resolveStockAlert(1).subscribe(() => {
+      resolved = true;
+    });
+
+    const patchReq = httpMock.expectOne((r) =>
+      r.url.endsWith('/api/produto/alertas-estoque/1/resolver'),
+    );
+    expect(patchReq.request.method).toBe('PATCH');
+    patchReq.flush(null, { status: 204, statusText: 'No Content' });
+    expect(resolved).toBe(true);
+  });
 });

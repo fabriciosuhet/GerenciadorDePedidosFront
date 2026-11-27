@@ -15,4 +15,12 @@ export const PRODUCTS_ROUTES: Routes = [
         (m) => m.StockMovementListComponent,
       ),
   },
+  {
+    path: 'alerts',
+    canActivate: [adminGuard],
+    loadComponent: () =>
+      import('./pages/stock-alert-list/stock-alert-list.component').then(
+        (m) => m.StockAlertListComponent,
+      ),
+  },
 ];

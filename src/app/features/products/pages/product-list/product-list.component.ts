@@ -55,10 +55,11 @@ export class ProductListComponent implements OnInit {
   protected readonly stockModalProduct = signal<Product | null>(null);
   protected readonly deletingProduct = signal<Product | null>(null);
 
-  protected readonly productForm = this.fb.nonNullable.group({
-    nome: ['', [Validators.required, Validators.maxLength(255)]],
-    preco: [0, [Validators.required, Validators.min(0.01)]],
-    estoque: [0, [Validators.required, Validators.min(0)]],
+  protected readonly productForm = this.fb.group({
+    nome: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(255)]),
+    preco: this.fb.nonNullable.control(0, [Validators.required, Validators.min(0.01)]),
+    estoque: this.fb.nonNullable.control(0, [Validators.required, Validators.min(0)]),
+    estoqueMinimo: this.fb.control<number | null>(5, [Validators.min(0)]),
   });
 
   protected readonly stockForm = this.fb.nonNullable.group({
@@ -122,7 +123,7 @@ export class ProductListComponent implements OnInit {
 
   protected openCreateModal(): void {
     this.editingProduct.set(null);
-    this.productForm.reset({ nome: '', preco: 0, estoque: 0 });
+    this.productForm.reset({ nome: '', preco: 0, estoque: 0, estoqueMinimo: 5 });
     this.productModalOpen.set(true);
   }
 
@@ -132,6 +133,7 @@ export class ProductListComponent implements OnInit {
       nome: product.nome,
       preco: product.preco,
       estoque: product.estoque,
+      estoqueMinimo: null,
     });
     this.productModalOpen.set(true);
   }
@@ -147,8 +149,19 @@ export class ProductListComponent implements OnInit {
     const editing = this.editingProduct();
 
     const request$: Observable<unknown> = editing
-      ? this.productService.update({ id: editing.id, ...val })
-      : this.productService.create(val);
+      ? this.productService.update({
+          id: editing.id,
+          nome: val.nome,
+          preco: val.preco,
+          estoque: val.estoque,
+          ...(val.estoqueMinimo !== null ? { estoqueMinimo: val.estoqueMinimo } : {}),
+        })
+      : this.productService.create({
+          nome: val.nome,
+          preco: val.preco,
+          estoque: val.estoque,
+          estoqueMinimo: val.estoqueMinimo ?? 5,
+        });
 
     request$
       .pipe(

@@ -1,0 +1,261 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <span
+        class="inline-block rounded-lg bg-amber-400/20 px-2.5 py-0.5 font-display text-xs font-bold text-amber-900 dark:bg-amber-400/15 dark:text-amber-300"
+      >
+        AUDITORIA DE ESTOQUE
+      </span>
+      <h1 class="mt-1.5 text-2xl font-extrabold tracking-tight text-zinc-950 dark:text-white">
+        Alertas de Estoque
+      </h1>
+      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        Alertas gerados automaticamente quando o saldo de um produto fica igual ou abaixo do estoque mínimo.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <a
+        routerLink="/products"
+        class="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+      >
+        Gerenciar produtos
+      </a>
+      <button
+        type="button"
+        (click)="loadAlerts()"
+        [disabled]="loading()"
+        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-lime-400 dark:text-zinc-950 dark:hover:bg-lime-300"
+      >
+        Atualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div
+      class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <p class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        Alertas Pendentes
+      </p>
+      <p class="mt-2 font-display text-3xl font-extrabold text-amber-600 dark:text-amber-400">
+        {{ pendingCount() }}
+      </p>
+      <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        Produtos aguardando reposição ou resolução manual
+      </p>
+    </div>
+
+    <div
+      class="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <p class="font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        {{ onlyPending() ? 'Visualização Atual' : 'Alertas Resolvidos' }}
+      </p>
+      <p class="mt-2 font-display text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+        {{ onlyPending() ? 'Somente pendentes' : resolvedCount() }}
+      </p>
+      <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        {{
+          onlyPending()
+            ? 'Alterne para Histórico para consultar alertas já resolvidos'
+            : 'Ocorrências resolvidas automaticamente ou manualmente'
+        }}
+      </p>
+    </div>
+  </div>
+
+  <div
+    class="space-y-4 rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+  >
+    <form [formGroup]="searchForm" (ngSubmit)="applySearch()" class="flex flex-col gap-3 sm:flex-row">
+      <label for="stock-alert-search" class="sr-only">Buscar alerta por produto ou pedido</label>
+      <input
+        id="stock-alert-search"
+        type="text"
+        formControlName="query"
+        placeholder="Filtrar por nome do produto, SKU ou nº do pedido..."
+        class="flex-1 rounded-2xl border border-zinc-200 bg-zinc-50/70 px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+      />
+      <div class="flex gap-2">
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center rounded-2xl bg-zinc-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800 dark:bg-lime-400 dark:text-zinc-950 dark:hover:bg-lime-300"
+        >
+          Buscar
+        </button>
+        @if (searchForm.controls.query.value || searchQuery()) {
+          <button
+            type="button"
+            (click)="clearSearch()"
+            class="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            Limpar
+          </button>
+        }
+      </div>
+    </form>
+
+    <div class="flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3.5 dark:border-zinc-800">
+      <span class="font-display text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500">
+        Status:
+      </span>
+      <button
+        type="button"
+        (click)="selectFilter(true)"
+        class="rounded-full border px-3.5 py-1 text-xs font-bold transition"
+        [class]="
+          onlyPending()
+            ? 'border-amber-500 bg-amber-500 text-white'
+            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800'
+        "
+      >
+        Pendentes
+      </button>
+      <button
+        type="button"
+        (click)="selectFilter(false)"
+        class="rounded-full border px-3.5 py-1 text-xs font-bold transition"
+        [class]="
+          !onlyPending()
+            ? 'border-zinc-900 bg-zinc-900 text-white dark:border-lime-400 dark:bg-lime-400 dark:text-zinc-950'
+            : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800'
+        "
+      >
+        Todos (Histórico)
+      </button>
+    </div>
+  </div>
+
+  <div
+    class="overflow-hidden rounded-3xl border border-zinc-200/80 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900"
+  >
+    @if (loading()) {
+      <div class="p-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        Carregando alertas de estoque...
+      </div>
+    } @else if (errorMessage()) {
+      <div class="p-8 text-center">
+        <p class="text-sm font-bold text-rose-600 dark:text-rose-400">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="loadAlerts()"
+          class="mt-3 rounded-xl bg-zinc-950 px-4 py-2 text-xs font-bold text-white dark:bg-lime-400 dark:text-zinc-950"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    } @else if (filteredAlerts().length === 0) {
+      <div class="p-12 text-center">
+        <p class="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+          {{ onlyPending() ? 'Nenhum alerta pendente no momento' : 'Nenhum alerta encontrado' }}
+        </p>
+        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          {{
+            onlyPending()
+              ? 'Todos os produtos monitorados estão com estoque regularizado.'
+              : 'Tente limpar a busca ou verifique novamente após novas movimentações.'
+          }}
+        </p>
+      </div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-zinc-200 text-left text-sm dark:divide-zinc-800">
+          <thead
+            class="bg-zinc-50/80 font-display text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:bg-zinc-950/60 dark:text-zinc-400"
+          >
+            <tr>
+              <th class="px-6 py-4">Alerta</th>
+              <th class="px-6 py-4">Produto</th>
+              <th class="px-6 py-4">Saldo / Mínimo</th>
+              <th class="px-6 py-4">Origem</th>
+              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4">Datas</th>
+              <th class="px-6 py-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-100 bg-white dark:divide-zinc-800/80 dark:bg-zinc-900">
+            @for (alert of filteredAlerts(); track alert.id) {
+              <tr class="transition hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40">
+                <td class="px-6 py-4">
+                  <span
+                    class="inline-flex rounded-lg bg-zinc-100 px-2.5 py-1 font-display text-xs font-bold text-zinc-800 dark:bg-zinc-800 dark:text-lime-400"
+                  >
+                    #{{ alert.id }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <p class="font-bold text-zinc-900 dark:text-white">{{ alert.produtoNome }}</p>
+                  <p class="font-display text-xs text-zinc-500 dark:text-zinc-400">
+                    SKU #{{ alert.produtoId }}
+                  </p>
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-display text-xs font-bold"
+                    [class]="
+                      alert.estoqueAtual === 0
+                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
+                    "
+                  >
+                    {{ alert.estoqueAtual }} / mín. {{ alert.estoqueMinimo }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                  @if (alert.pedidoId) {
+                    <span class="font-display">Pedido #{{ alert.pedidoId }}</span>
+                  } @else {
+                    <span>Ajuste manual</span>
+                  }
+                </td>
+                <td class="px-6 py-4">
+                  @if (alert.resolvido) {
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                      Resolvido
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950/70 dark:text-amber-300"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                      Pendente
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 font-display text-xs text-zinc-500 dark:text-zinc-400">
+                  <p>Criado: {{ alert.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</p>
+                  @if (alert.resolvidoEm) {
+                    <p class="mt-0.5 text-emerald-600 dark:text-emerald-400">
+                      Resolvido: {{ alert.resolvidoEm | date: 'dd/MM/yyyy HH:mm' }}
+                    </p>
+                  }
+                </td>
+                <td class="px-6 py-4 text-right">
+                  @if (!alert.resolvido) {
+                    <button
+                      type="button"
+                      [disabled]="resolvingId() === alert.id"
+                      (click)="resolveAlert(alert)"
+                      class="inline-flex items-center justify-center rounded-xl bg-lime-400 px-3.5 py-1.5 text-xs font-bold text-zinc-950 shadow-xs transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {{ resolvingId() === alert.id ? 'Resolvendo...' : 'Resolver' }}
+                    </button>
+                  } @else {
+                    <span class="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                      Concluído
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

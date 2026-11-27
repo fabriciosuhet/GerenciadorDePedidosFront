@@ -10,6 +10,7 @@ import {
   Product,
   ProductDetail,
   StockAdjustmentPayload,
+  StockAlertRecord,
   StockMovementDetail,
   StockMovementListItem,
   StockMovementReportFilter,
@@ -160,5 +161,17 @@ export class ProductService {
           };
         }),
       );
+  }
+
+  getStockAlerts(onlyPending?: boolean): Observable<StockAlertRecord[]> {
+    let params = new HttpParams();
+    if (onlyPending !== undefined) {
+      params = params.set('apenasPendentes', onlyPending);
+    }
+    return this.http.get<StockAlertRecord[]>(`${this.baseUrl}/alertas-estoque`, { params });
+  }
+
+  resolveStockAlert(id: number): Observable<void> {
+    return this.http.patch<void>(`${this.baseUrl}/alertas-estoque/${id}/resolver`, {});
   }
 }

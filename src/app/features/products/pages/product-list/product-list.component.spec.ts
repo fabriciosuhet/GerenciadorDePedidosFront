@@ -126,13 +126,19 @@ describe('ProductListComponent (Functional)', () => {
     const comp = fixture.componentInstance as unknown as {
       productForm: { setValue: (v: unknown) => void };
     };
-    comp.productForm.setValue({ nome: 'Headset Pro', preco: 350, estoque: 8 });
+    comp.productForm.setValue({ nome: 'Headset Pro', preco: 350, estoque: 8, estoqueMinimo: 10 });
     fixture.detectChanges();
 
     const modalForm = el.querySelectorAll('form')[1];
     modalForm.dispatchEvent(new Event('submit'));
 
     const postReq = httpMock.expectOne((r) => r.url.endsWith('/api/produto') && r.method === 'POST');
+    expect(postReq.request.body).toEqual({
+      nome: 'Headset Pro',
+      preco: 350,
+      estoque: 8,
+      estoqueMinimo: 10,
+    });
     postReq.flush({ id: 2 });
 
     const refreshReqs = httpMock.match((r) => r.url.endsWith('/api/produto') && r.method === 'GET');
