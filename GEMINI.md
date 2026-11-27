@@ -76,5 +76,5 @@ src/app/
 - Ao alterar código estrutural, valide com `ng build` (e `ng test` quando houver testes afetados).
 - Use o Angular CLI (`ng generate`) para criar componentes, services e rotas, mantendo o padrão do projeto.
 - Antes de iniciar qualquer alteração: `git checkout main`, `git pull` e crie uma nova branch baseada na `main` (ex.: `feature/nome-da-tarefa`). Nunca commite direto na `main`.
-- Ao finalizar qualquer tarefa com alterações validadas (`ng build` e `ng test`), realize automaticamente o commit em pt-BR, faça o push da branch para `origin` e abra o Pull Request (usando `gh pr create` quando disponível ou fornecendo o link direto de criação no GitHub com título e descrição prontos).
+- Ao finalizar qualquer tarefa com alterações validadas (`ng build` e `ng test`), realize automaticamente o commit em pt-BR, faça o push da branch para `origin` e abra o Pull Request já com título e descrição completos em pt-BR (usando `gh pr create --title ... --body ...` quando disponível, ou gerando o link direto do GitHub `/compare/main...<branch>?expand=1&title=...&body=...` com título e descrição já pré-preenchidos na URL).
 - **Nunca adicione o agente/IA como coautor** (`Co-authored-by`) em mensagens de commit ou PRs.
