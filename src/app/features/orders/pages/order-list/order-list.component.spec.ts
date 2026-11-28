@@ -368,4 +368,33 @@ describe('OrderListComponent (Functional)', () => {
     expect(row.textContent).toContain('Em Preparo');
     expect(row.textContent).toContain('Concluir');
   });
+
+  it('merges recent SignalR update when event arrives before GET /api/pedido finishes', () => {
+    const realtimeService = TestBed.inject(OrderRealtimeService);
+    realtimeService.notifyStatusUpdated({
+      pedidoId: 99,
+      clienteId: 'guid-1',
+      statusAnterior: OrderStatus.Pending,
+      statusAtual: OrderStatus.Processed,
+      total: 180,
+      atualizadoEm: '2026-11-28T11:55:00Z',
+    });
+
+    const fixture = TestBed.createComponent(OrderListComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [
+        { id: 99, dataPedido: '2026-11-28T11:54:59Z', total: 180, status: OrderStatus.Pending },
+      ],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const row = (fixture.nativeElement as HTMLElement).querySelector('tbody tr')!;
+    expect(row.textContent).toContain('Em Preparo');
+    expect(row.textContent).toContain('Concluir');
+  });
 });

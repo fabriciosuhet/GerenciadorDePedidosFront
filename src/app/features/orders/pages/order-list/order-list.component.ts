@@ -61,6 +61,8 @@ export class OrderListComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly localMutatedOrderIds = new Set<number>();
+  private pendingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingFallbackAttempts = 0;
 
   protected readonly pageSize = signal(10);
   protected readonly currentPage = signal(1);
@@ -109,6 +111,9 @@ export class OrderListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearPendingFallbackTimer());
+    this.orderRealtimeService.connect();
+
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const q = params.get('q')?.trim() ?? '';
       this.currentPage.set(1);
@@ -145,9 +150,11 @@ export class OrderListComponent implements OnInit {
     return this.authService.isAdmin() && order.status === OrderStatus.Completed;
   }
 
-  protected loadOrders(): void {
-    this.loading.set(true);
-    this.errorMessage.set(null);
+  protected loadOrders(silent = false): void {
+    if (!silent) {
+      this.loading.set(true);
+      this.errorMessage.set(null);
+    }
     const query = this.filterForm.controls.query.value;
     const effectiveSize = this.orderNumberFilter().trim() ? 100 : this.pageSize();
 
@@ -155,17 +162,31 @@ export class OrderListComponent implements OnInit {
       .getAll(query, this.currentPage(), effectiveSize)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.loading.set(false)),
+        finalize(() => {
+          if (!silent) {
+            this.loading.set(false);
+          }
+        }),
       )
       .subscribe({
         next: (res) => {
-          this.orders.set(res.items);
+          const mergedItems = res.items.map((item) => {
+            const recent = this.orderRealtimeService.getRecentUpdate(item.id);
+            if (recent && item.status === OrderStatus.Pending && recent.statusAtual !== OrderStatus.Pending) {
+              return { ...item, status: recent.statusAtual, total: recent.total };
+            }
+            return item;
+          });
+          this.orders.set(mergedItems);
           this.totalCount.set(res.totalCount);
+          this.scheduleFallbackSyncIfNeeded(mergedItems);
         },
         error: (err: unknown) => {
-          this.orders.set([]);
-          this.totalCount.set(0);
-          this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar pedidos.'));
+          if (!silent) {
+            this.orders.set([]);
+            this.totalCount.set(0);
+            this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar pedidos.'));
+          }
         },
       });
   }
@@ -389,6 +410,33 @@ export class OrderListComponent implements OnInit {
     setTimeout(() => this.localMutatedOrderIds.delete(orderId), 5000);
   }
 
+  private scheduleFallbackSyncIfNeeded(items: OrderSummary[]): void {
+    const hasPending = items.some((item) => item.status === OrderStatus.Pending);
+    if (!hasPending || this.orderRealtimeService.connectionState() === 'connected') {
+      this.pendingFallbackAttempts = 0;
+      this.clearPendingFallbackTimer();
+      return;
+    }
+
+    if (this.pendingFallbackAttempts >= 4 || this.pendingFallbackTimer !== null) {
+      return;
+    }
+
+    this.pendingFallbackAttempts += 1;
+    this.orderRealtimeService.connect();
+    this.pendingFallbackTimer = setTimeout(() => {
+      this.pendingFallbackTimer = null;
+      this.loadOrders(true);
+    }, 2500);
+  }
+
+  private clearPendingFallbackTimer(): void {
+    if (this.pendingFallbackTimer !== null) {
+      clearTimeout(this.pendingFallbackTimer);
+      this.pendingFallbackTimer = null;
+    }
+  }
+
   private applyRealtimeStatusUpdate(event: OrderStatusUpdatedEvent): void {
     const currentOrders = this.orders();
     const existingIndex = currentOrders.findIndex((o) => o.id === event.pedidoId);
@@ -400,6 +448,10 @@ export class OrderListComponent implements OnInit {
           : order,
       );
       this.orders.set(updated);
+      if (!updated.some((o) => o.status === OrderStatus.Pending)) {
+        this.pendingFallbackAttempts = 0;
+        this.clearPendingFallbackTimer();
+      }
     } else if (
       this.currentPage() === 1 &&
       !this.filterForm.controls.query.value.trim() &&

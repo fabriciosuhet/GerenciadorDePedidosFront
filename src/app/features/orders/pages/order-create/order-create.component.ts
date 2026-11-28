@@ -20,6 +20,7 @@ import { Router, RouterLink } from '@angular/router';
 import { catchError, finalize, forkJoin, map, of } from 'rxjs';
 import { createEmptyPagedResult } from '../../../../core/models/paged-result.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrderRealtimeService } from '../../../../core/services/order-realtime.service';
 import { StockAlertService } from '../../../../core/services/stock-alert.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
@@ -48,6 +49,7 @@ export class OrderCreateComponent implements OnInit {
   private readonly customerService = inject(CustomerService);
   private readonly productService = inject(ProductService);
   private readonly orderService = inject(OrderService);
+  private readonly orderRealtimeService = inject(OrderRealtimeService);
   private readonly stockAlertService = inject(StockAlertService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
@@ -153,6 +155,7 @@ export class OrderCreateComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
+    this.orderRealtimeService.connect();
     this.submitting.set(true);
 
     this.orderService

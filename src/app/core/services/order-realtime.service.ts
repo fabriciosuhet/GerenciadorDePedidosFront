@@ -14,13 +14,24 @@ export type RealtimeConnectionState =
 export const ORDERS_HUB_ROUTE = '/hubs/pedidos';
 export const ORDER_STATUS_UPDATED_EVENT = 'PedidoStatusAtualizado';
 
+const RETRY_DELAYS_MS = [2000, 4000, 8000, 15000, 30000] as const;
+const RECENT_UPDATE_TTL_MS = 60_000;
+
+interface CachedRealtimeUpdate {
+  event: OrderStatusUpdatedEvent;
+  receivedAt: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderRealtimeService {
   private readonly authService = inject(AuthService);
 
   private hubConnection: HubConnection | null = null;
   private startPromise: Promise<void> | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private retryAttempt = 0;
   private connectVersion = 0;
+  private readonly recentUpdates = new Map<number, CachedRealtimeUpdate>();
 
   private readonly connectionStateSignal = signal<RealtimeConnectionState>('disconnected');
   private readonly lastUpdateSignal = signal<OrderStatusUpdatedEvent | null>(null);
@@ -31,13 +42,15 @@ export class OrderRealtimeService {
   readonly statusUpdated$ = this.statusUpdatedSubject.asObservable();
 
   connect(): void {
-    if (!this.authService.isAuthenticated()) {
+    if (!this.isUserAuthenticated()) {
       return;
     }
 
     if (this.startPromise || this.connectionStateSignal() === 'connected') {
       return;
     }
+
+    this.clearRetryTimer();
 
     const version = ++this.connectVersion;
     this.connectionStateSignal.set('connecting');
@@ -51,6 +64,9 @@ export class OrderRealtimeService {
 
   disconnect(): void {
     this.connectVersion += 1;
+    this.retryAttempt = 0;
+    this.clearRetryTimer();
+
     const connection = this.hubConnection;
     this.hubConnection = null;
     this.startPromise = null;
@@ -63,14 +79,40 @@ export class OrderRealtimeService {
   }
 
   notifyStatusUpdated(event: OrderStatusUpdatedEvent): void {
+    const existing = this.recentUpdates.get(event.pedidoId);
+    const shouldReplace =
+      !existing ||
+      event.statusAtual !== event.statusAnterior ||
+      existing.event.statusAtual === event.statusAtual;
+
+    if (shouldReplace) {
+      this.recentUpdates.set(event.pedidoId, {
+        event,
+        receivedAt: Date.now(),
+      });
+    }
+
+    this.pruneExpiredUpdates();
     this.lastUpdateSignal.set(event);
     this.statusUpdatedSubject.next(event);
+  }
+
+  getRecentUpdate(orderId: number): OrderStatusUpdatedEvent | null {
+    const entry = this.recentUpdates.get(orderId);
+    if (!entry) {
+      return null;
+    }
+    if (Date.now() - entry.receivedAt > RECENT_UPDATE_TTL_MS) {
+      this.recentUpdates.delete(orderId);
+      return null;
+    }
+    return entry.event;
   }
 
   private async startHubConnection(version: number): Promise<void> {
     try {
       const signalR = await import('@microsoft/signalr');
-      if (this.connectVersion !== version || !this.authService.isAuthenticated()) {
+      if (this.connectVersion !== version || !this.isUserAuthenticated()) {
         return;
       }
 
@@ -94,13 +136,16 @@ export class OrderRealtimeService {
 
       connection.onreconnected(() => {
         if (this.hubConnection === connection) {
+          this.retryAttempt = 0;
           this.connectionStateSignal.set('connected');
         }
       });
 
       connection.onclose(() => {
         if (this.hubConnection === connection) {
+          this.hubConnection = null;
           this.connectionStateSignal.set('disconnected');
+          this.scheduleReconnect(version);
         }
       });
 
@@ -113,10 +158,54 @@ export class OrderRealtimeService {
         return;
       }
 
+      this.retryAttempt = 0;
       this.connectionStateSignal.set('connected');
-    } catch {
+    } catch (err: unknown) {
       if (this.connectVersion === version) {
+        this.hubConnection = null;
         this.connectionStateSignal.set('disconnected');
+        console.warn('[OrderRealtimeService] Falha ao conectar ao SignalR (/hubs/pedidos):', err);
+        this.scheduleReconnect(version);
+      }
+    }
+  }
+
+  private scheduleReconnect(version: number): void {
+    if (this.connectVersion !== version || !this.isUserAuthenticated()) {
+      return;
+    }
+
+    this.clearRetryTimer();
+    const delayIndex = Math.min(this.retryAttempt, RETRY_DELAYS_MS.length - 1);
+    const delayMs = RETRY_DELAYS_MS[delayIndex];
+    this.retryAttempt += 1;
+
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      if (this.connectVersion === version && this.isUserAuthenticated()) {
+        this.connect();
+      }
+    }, delayMs);
+  }
+
+  private isUserAuthenticated(): boolean {
+    return typeof this.authService.isAuthenticated === 'function'
+      ? this.authService.isAuthenticated()
+      : false;
+  }
+
+  private clearRetryTimer(): void {
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+  }
+
+  private pruneExpiredUpdates(): void {
+    const now = Date.now();
+    for (const [orderId, entry] of this.recentUpdates.entries()) {
+      if (now - entry.receivedAt > RECENT_UPDATE_TTL_MS) {
+        this.recentUpdates.delete(orderId);
       }
     }
   }

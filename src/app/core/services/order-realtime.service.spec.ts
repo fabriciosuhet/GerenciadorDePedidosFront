@@ -47,6 +47,7 @@ describe('OrderRealtimeService', () => {
     service.notifyStatusUpdated(event);
 
     expect(service.lastUpdate()).toEqual(event);
+    expect(service.getRecentUpdate(77)).toEqual(event);
     expect(received).toEqual([event]);
 
     sub.unsubscribe();
