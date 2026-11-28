@@ -135,4 +135,46 @@ describe('AuthService', () => {
     expect(logoutReq.request.headers.get('Authorization')).toBe(`Bearer ${token}`);
     logoutReq.flush(null, { status: 204, statusText: 'No Content' });
   });
+
+  it('calls forgotPassword, resetPassword and changePassword endpoints', () => {
+    let forgotMessage = '';
+    service.forgotPassword({ email: 'user@teste.com' }).subscribe((res) => {
+      forgotMessage = res.message;
+    });
+    const forgotReq = httpMock.expectOne((r) => r.url.endsWith('/api/login/esqueci-senha'));
+    expect(forgotReq.request.method).toBe('POST');
+    expect(forgotReq.request.body).toEqual({ email: 'user@teste.com' });
+    forgotReq.flush({ message: 'Instruções enviadas.' });
+    expect(forgotMessage).toBe('Instruções enviadas.');
+
+    let resetDone = false;
+    service
+      .resetPassword({
+        token: 'tok-1',
+        novaSenha: 'Nova@1234',
+        confirmarNovaSenha: 'Nova@1234',
+      })
+      .subscribe(() => {
+        resetDone = true;
+      });
+    const resetReq = httpMock.expectOne((r) => r.url.endsWith('/api/login/redefinir-senha'));
+    expect(resetReq.request.method).toBe('POST');
+    resetReq.flush(null, { status: 204, statusText: 'No Content' });
+    expect(resetDone).toBe(true);
+
+    let changeDone = false;
+    service
+      .changePassword({
+        senhaAtual: 'Atual@123',
+        novaSenha: 'Nova@1234',
+        confirmarNovaSenha: 'Nova@1234',
+      })
+      .subscribe(() => {
+        changeDone = true;
+      });
+    const changeReq = httpMock.expectOne((r) => r.url.endsWith('/api/login/alterar-senha'));
+    expect(changeReq.request.method).toBe('POST');
+    changeReq.flush(null, { status: 204, statusText: 'No Content' });
+    expect(changeDone).toBe(true);
+  });
 });

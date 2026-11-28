@@ -19,6 +19,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     req.url.endsWith('/login') ||
     req.url.endsWith('/login/refresh') ||
     req.url.endsWith('/login/logout') ||
+    req.url.endsWith('/login/esqueci-senha') ||
+    req.url.endsWith('/login/redefinir-senha') ||
     req.url.endsWith('/cliente/registrar');
 
   if (isAuthBypassRoute) {
