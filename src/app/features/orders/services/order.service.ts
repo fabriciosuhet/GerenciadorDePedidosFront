@@ -7,9 +7,12 @@ import { DownloadedFile, ReportFilter } from '../../../core/models/report.model'
 import { extractFilenameFromContentDisposition } from '../../../core/utils/file-download.util';
 import {
   CancelOrderResponse,
+  CompleteOrderResponse,
   CreateOrderPayload,
   OrderDetail,
   OrderSummary,
+  ReturnOrderPayload,
+  ReturnOrderResponse,
 } from '../models/order.model';
 
 @Injectable({ providedIn: 'root' })
@@ -37,6 +40,14 @@ export class OrderService {
 
   cancel(id: number): Observable<CancelOrderResponse> {
     return this.http.patch<CancelOrderResponse>(`${this.baseUrl}/${id}/cancelar`, {});
+  }
+
+  complete(id: number): Observable<CompleteOrderResponse> {
+    return this.http.patch<CompleteOrderResponse>(`${this.baseUrl}/${id}/concluir`, {});
+  }
+
+  returnOrder(id: number, payload: ReturnOrderPayload): Observable<ReturnOrderResponse> {
+    return this.http.patch<ReturnOrderResponse>(`${this.baseUrl}/${id}/devolver`, payload);
   }
 
   delete(id: number): Observable<string> {

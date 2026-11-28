@@ -198,4 +198,124 @@ describe('OrderListComponent (Functional)', () => {
     );
     expect(cancelAfterBtn).toBeUndefined();
   });
+
+  it('shows status badges per row, hides Cancelar for Cancelled/Returned/Completed and supports Concluir & Devolver for Admin', () => {
+    const fixture = TestBed.createComponent(OrderListComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [
+        { id: 1, dataPedido: '2026-11-28T10:00:00Z', total: 100, status: OrderStatus.Cancelled },
+        { id: 2, dataPedido: '2026-11-28T10:05:00Z', total: 200, status: OrderStatus.Returned },
+        { id: 3, dataPedido: '2026-11-28T10:10:00Z', total: 300, status: OrderStatus.Processed },
+        { id: 4, dataPedido: '2026-11-28T10:15:00Z', total: 400, status: OrderStatus.Completed },
+      ],
+      totalCount: 4,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const rows = Array.from(el.querySelectorAll('tbody tr'));
+    expect(rows.length).toBe(4);
+
+    // Cancelled row (#1): badge Cancelado, no Cancelar/Concluir/Devolver
+    expect(rows[0].textContent).toContain('Cancelado');
+    expect(rows[0].textContent).not.toContain('Cancelar');
+    expect(rows[0].textContent).not.toContain('Concluir');
+    expect(rows[0].textContent).not.toContain('Devolver');
+
+    // Returned row (#2): badge Devolvido, no Cancelar/Concluir/Devolver
+    expect(rows[1].textContent).toContain('Devolvido');
+    expect(rows[1].textContent).not.toContain('Cancelar');
+
+    // Processed row (#3): shows Concluir and Cancelar
+    expect(rows[2].textContent).toContain('Em Preparo');
+    expect(rows[2].textContent).toContain('Concluir');
+    expect(rows[2].textContent).toContain('Cancelar');
+
+    // Completed row (#4): shows Devolver, hides Cancelar
+    expect(rows[3].textContent).toContain('Entregue');
+    expect(rows[3].textContent).toContain('Devolver');
+    expect(rows[3].textContent).not.toContain('Cancelar');
+
+    // Complete order #3
+    const completeBtn = Array.from(rows[2].querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Concluir',
+    )!;
+    completeBtn.click();
+    fixture.detectChanges();
+
+    const confirmCompleteBtn = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Confirmar conclusão',
+    )!;
+    confirmCompleteBtn.click();
+
+    const completeReq = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/3/concluir'));
+    expect(completeReq.request.method).toBe('PATCH');
+    completeReq.flush({
+      pedidoId: 3,
+      status: OrderStatus.Completed,
+      concluidoEm: '2026-11-28T11:00:00Z',
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [
+        { id: 4, dataPedido: '2026-11-28T10:15:00Z', total: 400, status: OrderStatus.Completed },
+      ],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    // Return order #4
+    const returnBtn = Array.from(el.querySelectorAll<HTMLButtonElement>('tbody tr button')).find(
+      (b) => b.textContent?.trim() === 'Devolver',
+    )!;
+    returnBtn.click();
+    fixture.detectChanges();
+
+    const reasonInput = el.querySelector<HTMLTextAreaElement>('#return-order-reason')!;
+    reasonInput.value = 'Avaria no transporte';
+    reasonInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const returnForm = el.querySelector('[role="dialog"] form')!;
+    returnForm.dispatchEvent(new Event('submit'));
+
+    const returnReq = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/4/devolver'));
+    expect(returnReq.request.method).toBe('PATCH');
+    expect(returnReq.request.body).toEqual({
+      motivo: 'Avaria no transporte',
+      retornarAoEstoque: true,
+    });
+    returnReq.flush({
+      pedidoId: 4,
+      status: OrderStatus.Returned,
+      motivo: 'Avaria no transporte',
+      devolvidoEm: '2026-11-28T11:10:00Z',
+      estoqueEstornado: true,
+      unidadesEstornadas: 2,
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [
+        { id: 4, dataPedido: '2026-11-28T10:15:00Z', total: 400, status: OrderStatus.Returned },
+      ],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    httpMock.expectOne((r) => r.url.endsWith('/api/produto')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 100,
+    });
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Devolvido');
+  });
 });

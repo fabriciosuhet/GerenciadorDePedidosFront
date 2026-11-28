@@ -13,7 +13,8 @@ export type OrderStatusKey =
   | 'preparing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'returned';
 
 @Component({
   selector: 'app-status-badge',
@@ -44,6 +45,8 @@ export class StatusBadgeComponent {
         return 'delivered';
       case OrderStatus.Cancelled:
         return 'cancelled';
+      case OrderStatus.Returned:
+        return 'returned';
       default:
         return 'pending';
     }
@@ -62,6 +65,7 @@ export class StatusBadgeComponent {
         shipped: 'Enviado',
         delivered: 'Entregue',
         cancelled: 'Cancelado',
+        returned: 'Devolvido',
       };
       return map[key];
     }
@@ -86,6 +90,8 @@ export class StatusBadgeComponent {
           return 'bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-800/60';
         case 'cancelled':
           return 'bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-800/60';
+        case 'returned':
+          return 'bg-violet-50 text-violet-800 ring-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:ring-violet-800/60';
       }
     }
 
@@ -113,6 +119,8 @@ export class StatusBadgeComponent {
           return 'bg-emerald-500';
         case 'cancelled':
           return 'bg-rose-500';
+        case 'returned':
+          return 'bg-violet-500';
       }
     }
     const movement = this.movementType();

@@ -18,8 +18,15 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { OrderDetailModalComponent } from '../../components/order-detail-modal/order-detail-modal.component';
-import { OrderDetail, OrderSummary } from '../../models/order.model';
+import { OrderReturnModalComponent } from '../../components/order-return-modal/order-return-modal.component';
+import {
+  OrderDetail,
+  OrderStatus,
+  OrderSummary,
+  ReturnOrderPayload,
+} from '../../models/order.model';
 import { OrderService } from '../../services/order.service';
 
 @Component({
@@ -32,12 +39,15 @@ import { OrderService } from '../../services/order.service';
     RouterLink,
     ConfirmDialogComponent,
     PaginationComponent,
+    StatusBadgeComponent,
     OrderDetailModalComponent,
+    OrderReturnModalComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './order-list.component.html',
 })
 export class OrderListComponent implements OnInit {
+  protected readonly OrderStatus = OrderStatus;
   protected readonly authService = inject(AuthService);
   private readonly orderService = inject(OrderService);
   private readonly stockAlertService = inject(StockAlertService);
@@ -51,14 +61,23 @@ export class OrderListComponent implements OnInit {
   protected readonly totalCount = signal(0);
   protected readonly loading = signal(true);
   protected readonly cancelling = signal(false);
+  protected readonly completing = signal(false);
+  protected readonly returning = signal(false);
   protected readonly deleting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly returnErrorMessage = signal<string | null>(null);
   protected readonly orders = signal<OrderSummary[]>([]);
   protected readonly activeStatusTab = signal('');
   protected readonly orderNumberFilter = signal('');
   protected readonly selectedOrderDetail = signal<OrderDetail | null>(null);
   protected readonly cancellingOrderId = signal<number | null>(null);
+  protected readonly completingOrderId = signal<number | null>(null);
+  protected readonly returningOrderId = signal<number | null>(null);
   protected readonly deletingOrder = signal<OrderSummary | null>(null);
+
+  protected readonly modalBusy = computed(
+    () => this.cancelling() || this.completing() || this.returning(),
+  );
 
   protected readonly filterForm = this.fb.nonNullable.group({
     orderNumber: [''],
@@ -71,6 +90,7 @@ export class OrderListComponent implements OnInit {
     { label: 'Em Preparo', value: 'Processado' },
     { label: 'Entregue', value: 'Concluido' },
     { label: 'Cancelado', value: 'Cancelado' },
+    { label: 'Devolvido', value: 'Devolvido' },
   ];
 
   protected readonly filteredOrders = computed(() => {
@@ -98,6 +118,21 @@ export class OrderListComponent implements OnInit {
         this.loadOrders();
       }
     });
+  }
+
+  protected canCancel(order: OrderSummary): boolean {
+    if (order.status === undefined) {
+      return this.activeStatusTab() !== 'Cancelado' && this.activeStatusTab() !== 'Devolvido';
+    }
+    return order.status === OrderStatus.Pending || order.status === OrderStatus.Processed;
+  }
+
+  protected canComplete(order: OrderSummary): boolean {
+    return this.authService.isAdmin() && order.status === OrderStatus.Processed;
+  }
+
+  protected canReturn(order: OrderSummary): boolean {
+    return this.authService.isAdmin() && order.status === OrderStatus.Completed;
   }
 
   protected loadOrders(): void {
@@ -211,6 +246,104 @@ export class OrderListComponent implements OnInit {
         error: (err: unknown) => {
           this.cancellingOrderId.set(null);
           this.toastService.error(extractApiErrorMessage(err, 'Erro ao cancelar pedido.'));
+        },
+      });
+  }
+
+  protected requestCompleteOrder(orderId: number): void {
+    this.completingOrderId.set(orderId);
+  }
+
+  protected confirmCompleteOrder(): void {
+    const orderId = this.completingOrderId();
+    if (orderId === null) {
+      return;
+    }
+
+    this.completing.set(true);
+    this.orderService
+      .complete(orderId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.completing.set(false)),
+      )
+      .subscribe({
+        next: (result) => {
+          this.toastService.success(`Pedido #${result.pedidoId} marcado como concluído/entregue!`);
+          this.completingOrderId.set(null);
+
+          const currentDetail = this.selectedOrderDetail();
+          if (currentDetail?.id === result.pedidoId) {
+            this.selectedOrderDetail.set({
+              ...currentDetail,
+              status: result.status,
+              concluidoEm: result.concluidoEm,
+            });
+          }
+
+          this.loadOrders();
+        },
+        error: (err: unknown) => {
+          this.completingOrderId.set(null);
+          this.toastService.error(extractApiErrorMessage(err, 'Erro ao concluir pedido.'));
+        },
+      });
+  }
+
+  protected requestReturnOrder(orderId: number): void {
+    this.returnErrorMessage.set(null);
+    this.returningOrderId.set(orderId);
+  }
+
+  protected closeReturnModal(): void {
+    if (!this.returning()) {
+      this.returningOrderId.set(null);
+      this.returnErrorMessage.set(null);
+    }
+  }
+
+  protected submitReturnOrder(payload: ReturnOrderPayload): void {
+    const orderId = this.returningOrderId();
+    if (orderId === null) {
+      return;
+    }
+
+    this.returning.set(true);
+    this.returnErrorMessage.set(null);
+
+    this.orderService
+      .returnOrder(orderId, payload)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.returning.set(false)),
+      )
+      .subscribe({
+        next: (result) => {
+          const message = result.estoqueEstornado
+            ? `Pedido #${result.pedidoId} devolvido! ${result.unidadesEstornadas} unidade(s) retornada(s) ao estoque.`
+            : `Pedido #${result.pedidoId} registrado como devolvido.`;
+          this.toastService.success(message);
+          this.returningOrderId.set(null);
+
+          const currentDetail = this.selectedOrderDetail();
+          if (currentDetail?.id === result.pedidoId) {
+            this.selectedOrderDetail.set({
+              ...currentDetail,
+              status: result.status,
+              devolvidoEm: result.devolvidoEm,
+              motivoDevolucao: result.motivo,
+            });
+          }
+
+          this.loadOrders();
+          if (result.estoqueEstornado) {
+            this.stockAlertService.checkCatalogStock();
+          }
+        },
+        error: (err: unknown) => {
+          const message = extractApiErrorMessage(err, 'Erro ao registrar devolução do pedido.');
+          this.returnErrorMessage.set(message);
+          this.toastService.error(message);
         },
       });
   }

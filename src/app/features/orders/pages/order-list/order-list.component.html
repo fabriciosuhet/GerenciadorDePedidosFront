@@ -10,7 +10,7 @@
         Pedidos
       </h1>
       <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        Consulte pedidos por número, filtre por status e visualize os itens detalhados.
+        Consulte pedidos por número, filtre por status e gerencie conclusão, cancelamento e devolução.
       </p>
     </div>
 
@@ -57,7 +57,7 @@
           id="order-query-input"
           type="text"
           formControlName="query"
-          placeholder="Ex: Pendente, Concluido..."
+          placeholder="Ex: Pendente, Concluido, Devolvido..."
           class="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-lime-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
         />
       </div>
@@ -136,6 +136,7 @@
             <tr>
               <th class="px-6 py-4">Nº do Pedido</th>
               <th class="px-6 py-4">Data / Hora</th>
+              <th class="px-6 py-4">Status</th>
               <th class="px-6 py-4">Valor Total</th>
               <th class="px-6 py-4 text-right">Ações</th>
             </tr>
@@ -153,11 +154,14 @@
                 <td class="px-6 py-4 font-display text-xs text-zinc-600 dark:text-zinc-300">
                   {{ order.dataPedido | date: 'dd/MM/yyyy HH:mm' }}
                 </td>
+                <td class="px-6 py-4">
+                  <app-status-badge [status]="order.status ?? OrderStatus.Pending" />
+                </td>
                 <td class="px-6 py-4 font-display font-bold text-zinc-950 dark:text-white">
                   {{ order.total | currency: 'BRL' }}
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <div class="inline-flex gap-2">
+                  <div class="inline-flex flex-wrap justify-end gap-2">
                     <button
                       type="button"
                       (click)="openOrderDetails(order.id)"
@@ -165,7 +169,25 @@
                     >
                       Detalhes
                     </button>
-                    @if (activeStatusTab() !== 'Cancelado') {
+                    @if (canComplete(order)) {
+                      <button
+                        type="button"
+                        (click)="requestCompleteOrder(order.id)"
+                        class="rounded-xl border border-emerald-300 px-3 py-1.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-50 dark:border-emerald-700/70 dark:text-emerald-300 dark:hover:bg-emerald-950/50"
+                      >
+                        Concluir
+                      </button>
+                    }
+                    @if (canReturn(order)) {
+                      <button
+                        type="button"
+                        (click)="requestReturnOrder(order.id)"
+                        class="rounded-xl border border-violet-300 px-3 py-1.5 text-xs font-bold text-violet-800 transition hover:bg-violet-50 dark:border-violet-700/70 dark:text-violet-300 dark:hover:bg-violet-950/50"
+                      >
+                        Devolver
+                      </button>
+                    }
+                    @if (canCancel(order)) {
                       <button
                         type="button"
                         (click)="requestCancelOrder(order.id)"
@@ -205,9 +227,35 @@
 
 <app-order-detail-modal
   [order]="selectedOrderDetail()"
-  [cancelling]="cancelling()"
+  [isAdmin]="authService.isAdmin()"
+  [busy]="modalBusy()"
   (closed)="selectedOrderDetail.set(null)"
   (cancelRequested)="requestCancelOrder($event.id)"
+  (completeRequested)="requestCompleteOrder($event.id)"
+  (returnRequested)="requestReturnOrder($event.id)"
+/>
+
+<app-confirm-dialog
+  [open]="completingOrderId() !== null"
+  title="Concluir pedido"
+  [message]="
+    'Deseja confirmar a entrega/conclusão do pedido #' +
+    (completingOrderId() ?? '') +
+    '? Após concluído, o pedido passará para o status Entregue.'
+  "
+  confirmLabel="Confirmar conclusão"
+  cancelLabel="Voltar"
+  [loading]="completing()"
+  (cancelled)="completingOrderId.set(null)"
+  (confirmed)="confirmCompleteOrder()"
+/>
+
+<app-order-return-modal
+  [orderId]="returningOrderId()"
+  [saving]="returning()"
+  [errorMessage]="returnErrorMessage()"
+  (closed)="closeReturnModal()"
+  (submitted)="submitReturnOrder($event)"
 />
 
 <app-confirm-dialog

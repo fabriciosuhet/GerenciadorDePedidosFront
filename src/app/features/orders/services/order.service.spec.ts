@@ -85,4 +85,39 @@ describe('OrderService', () => {
 
     expect(filename).toBe('relatorio-vendas-mes.pdf');
   });
+
+  it('sends PATCH requests to complete and return an order', () => {
+    service.complete(15).subscribe((res) => {
+      expect(res.pedidoId).toBe(15);
+      expect(res.status).toBe(OrderStatus.Completed);
+    });
+
+    const completeReq = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/15/concluir'));
+    expect(completeReq.request.method).toBe('PATCH');
+    completeReq.flush({
+      pedidoId: 15,
+      status: OrderStatus.Completed,
+      concluidoEm: '2026-11-28T11:00:00-03:00',
+    });
+
+    service
+      .returnOrder(15, { motivo: 'Desistência', retornarAoEstoque: true })
+      .subscribe((res) => {
+        expect(res.status).toBe(OrderStatus.Returned);
+        expect(res.estoqueEstornado).toBe(true);
+        expect(res.unidadesEstornadas).toBe(3);
+      });
+
+    const returnReq = httpMock.expectOne((r) => r.url.endsWith('/api/pedido/15/devolver'));
+    expect(returnReq.request.method).toBe('PATCH');
+    expect(returnReq.request.body).toEqual({ motivo: 'Desistência', retornarAoEstoque: true });
+    returnReq.flush({
+      pedidoId: 15,
+      status: OrderStatus.Returned,
+      motivo: 'Desistência',
+      devolvidoEm: '2026-11-28T11:10:00-03:00',
+      estoqueEstornado: true,
+      unidadesEstornadas: 3,
+    });
+  });
 });
