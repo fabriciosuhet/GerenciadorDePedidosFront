@@ -14,10 +14,14 @@ import {
 } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
+  ResetPasswordRequest,
   UserRoleName,
 } from '../../features/auth/models/auth.model';
 
@@ -72,6 +76,21 @@ export class AuthService {
         this.persistSession(res.token, res.refreshToken, payload.email, res.id);
       }),
     );
+  }
+
+  forgotPassword(payload: ForgotPasswordRequest): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>(
+      `${this.apiBaseUrl}/login/esqueci-senha`,
+      payload,
+    );
+  }
+
+  resetPassword(payload: ResetPasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.apiBaseUrl}/login/redefinir-senha`, payload);
+  }
+
+  changePassword(payload: ChangePasswordRequest): Observable<void> {
+    return this.http.post<void>(`${this.apiBaseUrl}/login/alterar-senha`, payload);
   }
 
   refreshSession(): Observable<string> {

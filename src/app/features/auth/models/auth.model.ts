@@ -33,5 +33,25 @@ export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  novaSenha: string;
+  confirmarNovaSenha: string;
+}
+
+export interface ChangePasswordRequest {
+  senhaAtual: string;
+  novaSenha: string;
+  confirmarNovaSenha: string;
+}
+
 export const STRONG_PASSWORD_REGEX =
   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
