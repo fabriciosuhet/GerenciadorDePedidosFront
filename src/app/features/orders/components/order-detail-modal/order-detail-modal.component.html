@@ -25,6 +25,31 @@
         <app-status-badge [status]="detail.status" />
       </div>
 
+      @if (detail.concluidoEm || detail.devolvidoEm || detail.motivoDevolucao) {
+        <div
+          class="mt-4 space-y-1.5 rounded-2xl border border-zinc-200/80 bg-zinc-50/80 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-950/80"
+        >
+          @if (detail.concluidoEm) {
+            <p class="text-zinc-600 dark:text-zinc-300">
+              <strong class="text-emerald-700 dark:text-emerald-400">Concluído em:</strong>
+              <span class="ml-1 font-display">{{ detail.concluidoEm | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </p>
+          }
+          @if (detail.devolvidoEm) {
+            <p class="text-zinc-600 dark:text-zinc-300">
+              <strong class="text-violet-700 dark:text-violet-400">Devolvido em:</strong>
+              <span class="ml-1 font-display">{{ detail.devolvidoEm | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </p>
+          }
+          @if (detail.motivoDevolucao) {
+            <p class="text-zinc-600 dark:text-zinc-300">
+              <strong class="text-violet-700 dark:text-violet-400">Motivo da devolução:</strong>
+              <span class="ml-1">{{ detail.motivoDevolucao }}</span>
+            </p>
+          }
+        </div>
+      }
+
       <div class="mt-5 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
         <table class="min-w-full divide-y divide-zinc-200 text-left text-sm dark:divide-zinc-800">
           <thead
@@ -70,10 +95,30 @@
       </div>
 
       <div class="mt-6 flex flex-wrap items-center justify-end gap-2.5">
-        @if (detail.status !== OrderStatus.Cancelled) {
+        @if (isAdmin() && detail.status === OrderStatus.Processed) {
           <button
             type="button"
-            [disabled]="cancelling()"
+            [disabled]="busy()"
+            (click)="completeRequested.emit(detail)"
+            class="inline-flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-700/70 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950"
+          >
+            Concluir pedido
+          </button>
+        }
+        @if (isAdmin() && detail.status === OrderStatus.Completed) {
+          <button
+            type="button"
+            [disabled]="busy()"
+            (click)="returnRequested.emit(detail)"
+            class="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-bold text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-700/70 dark:bg-violet-950/60 dark:text-violet-300 dark:hover:bg-violet-950"
+          >
+            Devolver pedido
+          </button>
+        }
+        @if (detail.status === OrderStatus.Pending || detail.status === OrderStatus.Processed) {
+          <button
+            type="button"
+            [disabled]="busy()"
             (click)="cancelRequested.emit(detail)"
             class="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-amber-700/70 dark:bg-amber-950/60 dark:text-amber-300 dark:hover:bg-amber-950"
           >
@@ -82,7 +127,7 @@
         }
         <button
           type="button"
-          [disabled]="cancelling()"
+          [disabled]="busy()"
           (click)="closed.emit()"
           class="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >

@@ -7,6 +7,7 @@ export enum StockMovementReason {
   ManualAdjustment = 0,
   OrderSale = 1,
   CancellationRefund = 2,
+  Return = 3,
 }
 
 export interface Product {
@@ -83,6 +84,7 @@ export const STOCK_MOVEMENT_REASON_LABELS: Record<StockMovementReason, string> =
   [StockMovementReason.ManualAdjustment]: 'Ajuste manual',
   [StockMovementReason.OrderSale]: 'Venda de pedido',
   [StockMovementReason.CancellationRefund]: 'Estorno de cancelamento',
+  [StockMovementReason.Return]: 'Devolução de pedido',
 };
 
 export type StockReportPeriod = 'Semana' | 'Mes' | 'Ano';

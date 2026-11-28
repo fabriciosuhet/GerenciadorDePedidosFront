@@ -24,4 +24,12 @@ describe('StatusBadgeComponent', () => {
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Enviado');
   });
+
+  it('renders Returned status label as Devolvido', () => {
+    const fixture = TestBed.createComponent(StatusBadgeComponent);
+    fixture.componentRef.setInput('status', OrderStatus.Returned);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Devolvido');
+  });
 });

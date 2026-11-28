@@ -14,8 +14,11 @@ export class OrderDetailModalComponent {
   protected readonly OrderStatus = OrderStatus;
 
   readonly order = input<OrderDetail | null>(null);
-  readonly cancelling = input<boolean>(false);
+  readonly isAdmin = input<boolean>(false);
+  readonly busy = input<boolean>(false);
 
   readonly closed = output<void>();
   readonly cancelRequested = output<OrderDetail>();
+  readonly completeRequested = output<OrderDetail>();
+  readonly returnRequested = output<OrderDetail>();
 }
