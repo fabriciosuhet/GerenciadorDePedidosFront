@@ -47,6 +47,7 @@ export class ResetPasswordComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loading = signal(false);
+  protected readonly submitAttempted = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly tokenFromUrl = signal(false);
   protected readonly manualTokenMode = signal(false);
@@ -60,6 +61,7 @@ export class ResetPasswordComponent implements OnInit {
       lower: /[a-z]/.test(val),
       digit: /\d/.test(val),
       special: /[@$!%*?&]/.test(val),
+      hasUnsupportedChars: val.length > 0 && /[^A-Za-z\d@$!%*?&]/.test(val),
     };
   });
 
@@ -89,9 +91,29 @@ export class ResetPasswordComponent implements OnInit {
     this.manualTokenMode.set(true);
   }
 
+  protected onPasswordInput(): void {
+    this.passwordDraft.set(this.form.controls.novaSenha.value);
+    if (this.errorMessage()) {
+      this.errorMessage.set(null);
+    }
+  }
+
+  protected onFieldInteraction(): void {
+    if (this.errorMessage()) {
+      this.errorMessage.set(null);
+    }
+  }
+
+  protected showFieldError(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || this.submitAttempted());
+  }
+
   protected onSubmit(): void {
+    this.submitAttempted.set(true);
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.errorMessage.set(this.buildValidationErrorMessage());
       return;
     }
 
@@ -122,5 +144,30 @@ export class ResetPasswordComponent implements OnInit {
           );
         },
       });
+  }
+
+  private buildValidationErrorMessage(): string {
+    const { token, novaSenha, confirmarNovaSenha } = this.form.controls;
+
+    if (token.invalid) {
+      return 'Informe o token de redefinição enviado por e-mail.';
+    }
+    if (novaSenha.hasError('required')) {
+      return 'Informe a nova senha.';
+    }
+    if (this.passwordChecks().hasUnsupportedChars) {
+      return 'A senha contém caracteres não permitidos. Use apenas letras sem acento, números e @$!%*?&.';
+    }
+    if (novaSenha.invalid) {
+      return 'A nova senha não atende a todos os critérios de segurança obrigatórios.';
+    }
+    if (confirmarNovaSenha.hasError('required')) {
+      return 'Confirme a nova senha.';
+    }
+    if (this.form.hasError('passwordMismatch')) {
+      return 'A confirmação não confere com a nova senha.';
+    }
+
+    return 'Verifique os campos destacados antes de continuar.';
   }
 }

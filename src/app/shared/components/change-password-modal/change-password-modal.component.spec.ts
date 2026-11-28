@@ -34,7 +34,11 @@ describe('ChangePasswordModalComponent', () => {
 
     const form = el.querySelector('form')!;
     form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
     expect(submittedPayload).toBeUndefined();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+      'não atende a todos os critérios',
+    );
 
     newInput.value = 'NovaForte@123';
     newInput.dispatchEvent(new Event('input'));

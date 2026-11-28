@@ -94,4 +94,54 @@ describe('ResetPasswordComponent (Functional)', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('#reset-token')).not.toBeNull();
   });
+
+  it('displays clear alert and inline feedback when submitting weak password or unsupported character', async () => {
+    await TestBed.configureTestingModule({
+      imports: [ResetPasswordComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: of(convertToParamMap({ token: 'tok-from-email-123' })),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    httpMock = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(ResetPasswordComponent);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const newPwd = el.querySelector<HTMLInputElement>('#reset-new-password')!;
+    const confirmPwd = el.querySelector<HTMLInputElement>('#reset-confirm-password')!;
+    const form = el.querySelector('form')!;
+
+    newPwd.value = 'fraca123';
+    newPwd.dispatchEvent(new Event('input'));
+    confirmPwd.value = 'fraca123';
+    confirmPwd.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+      'não atende a todos os critérios',
+    );
+
+    newPwd.value = 'Senha@123#';
+    newPwd.dispatchEvent(new Event('input'));
+    confirmPwd.value = 'Senha@123#';
+    confirmPwd.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    form.dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('caracteres não permitidos');
+  });
 });

@@ -46,7 +46,13 @@ export class ChangePasswordModalComponent {
   readonly closed = output<void>();
   readonly submitted = output<ChangePasswordRequest>();
 
+  protected readonly submitAttempted = signal(false);
+  protected readonly localErrorMessage = signal<string | null>(null);
   protected readonly passwordDraft = signal('');
+
+  protected readonly displayedError = computed(
+    () => this.errorMessage() ?? this.localErrorMessage(),
+  );
 
   protected readonly passwordChecks = computed(() => {
     const val = this.passwordDraft();
@@ -56,6 +62,7 @@ export class ChangePasswordModalComponent {
       lower: /[a-z]/.test(val),
       digit: /\d/.test(val),
       special: /[@$!%*?&]/.test(val),
+      hasUnsupportedChars: val.length > 0 && /[^A-Za-z\d@$!%*?&]/.test(val),
     };
   });
 
@@ -73,6 +80,8 @@ export class ChangePasswordModalComponent {
       if (this.open()) {
         this.form.reset({ senhaAtual: '', novaSenha: '', confirmarNovaSenha: '' });
         this.passwordDraft.set('');
+        this.submitAttempted.set(false);
+        this.localErrorMessage.set(null);
       }
     });
 
@@ -83,6 +92,23 @@ export class ChangePasswordModalComponent {
         this.form.enable({ emitEvent: false });
       }
     });
+  }
+
+  protected onPasswordInput(): void {
+    this.passwordDraft.set(this.form.controls.novaSenha.value);
+    if (this.localErrorMessage()) {
+      this.localErrorMessage.set(null);
+    }
+  }
+
+  protected onFieldInteraction(): void {
+    if (this.localErrorMessage()) {
+      this.localErrorMessage.set(null);
+    }
+  }
+
+  protected showFieldError(control: AbstractControl): boolean {
+    return control.invalid && (control.touched || this.submitAttempted());
   }
 
   protected handleClose(): void {
@@ -96,11 +122,40 @@ export class ChangePasswordModalComponent {
       return;
     }
 
+    this.submitAttempted.set(true);
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.localErrorMessage.set(this.buildValidationErrorMessage());
       return;
     }
 
+    this.localErrorMessage.set(null);
     this.submitted.emit(this.form.getRawValue());
+  }
+
+  private buildValidationErrorMessage(): string {
+    const { senhaAtual, novaSenha, confirmarNovaSenha } = this.form.controls;
+
+    if (senhaAtual.invalid) {
+      return 'Informe sua senha atual.';
+    }
+    if (novaSenha.hasError('required')) {
+      return 'Informe a nova senha.';
+    }
+    if (this.passwordChecks().hasUnsupportedChars) {
+      return 'A senha contém caracteres não permitidos. Use apenas letras sem acento, números e @$!%*?&.';
+    }
+    if (novaSenha.invalid) {
+      return 'A nova senha não atende a todos os critérios de segurança obrigatórios.';
+    }
+    if (confirmarNovaSenha.hasError('required')) {
+      return 'Confirme a nova senha.';
+    }
+    if (this.form.hasError('passwordMismatch')) {
+      return 'A confirmação não confere com a nova senha.';
+    }
+
+    return 'Verifique os campos destacados antes de continuar.';
   }
 }
