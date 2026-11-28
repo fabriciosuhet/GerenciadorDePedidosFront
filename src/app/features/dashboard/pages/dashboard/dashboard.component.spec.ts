@@ -6,6 +6,7 @@ import localePt from '@angular/common/locales/pt';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrderRealtimeService } from '../../../../core/services/order-realtime.service';
 import { StockAlertService } from '../../../../core/services/stock-alert.service';
 import { OrderStatus } from '../../../orders/models/order.model';
 import { DashboardComponent } from './dashboard.component';
@@ -213,5 +214,44 @@ describe('DashboardComponent (Functional)', () => {
     expect(el.textContent).toContain('Monitor Ultrawide');
     expect(el.textContent).toContain('900,00');
     expect(el.textContent).toContain('25,0%');
+  });
+
+  it('updates recent order status in real time when SignalR emits PedidoStatusAtualizado', () => {
+    isAdmin.set(false);
+    const realtimeService = TestBed.inject(OrderRealtimeService);
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/cliente/me')).flush({
+      nomeCompleto: 'João Cliente',
+      telefone: '11977776666',
+      pedidos: [
+        {
+          id: 50,
+          dataPedido: '2026-11-28T11:40:00Z',
+          total: 320,
+          clienteId: 'guid-2',
+          clienteNome: 'João Cliente',
+          status: OrderStatus.Pending,
+          itensPedidos: [],
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Pendente');
+
+    realtimeService.notifyStatusUpdated({
+      pedidoId: 50,
+      clienteId: 'guid-2',
+      statusAnterior: OrderStatus.Pending,
+      statusAtual: OrderStatus.Processed,
+      total: 320,
+      atualizadoEm: '2026-11-28T11:40:02Z',
+    });
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Em Preparo');
   });
 });

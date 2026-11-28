@@ -6,6 +6,7 @@ import { LOCALE_ID, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrderRealtimeService } from '../../../../core/services/order-realtime.service';
 import { OrderStatus } from '../../models/order.model';
 import { OrderListComponent } from './order-list.component';
 
@@ -317,5 +318,54 @@ describe('OrderListComponent (Functional)', () => {
     fixture.detectChanges();
 
     expect(el.textContent).toContain('Devolvido');
+  });
+
+  it('updates order status and actions in real time when SignalR emits PedidoStatusAtualizado', () => {
+    const realtimeService = TestBed.inject(OrderRealtimeService);
+    const fixture = TestBed.createComponent(OrderListComponent);
+    fixture.detectChanges();
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/pedido')).flush({
+      items: [
+        { id: 88, dataPedido: '2026-11-28T11:40:00Z', total: 450, status: OrderStatus.Pending },
+      ],
+      totalCount: 1,
+      pageNumber: 1,
+      pageSize: 10,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const row = el.querySelector('tbody tr')!;
+    expect(row.textContent).toContain('Pendente');
+    expect(row.textContent).not.toContain('Concluir');
+
+    realtimeService.notifyStatusUpdated({
+      pedidoId: 88,
+      clienteId: 'guid-1',
+      statusAnterior: OrderStatus.Pending,
+      statusAtual: OrderStatus.Processed,
+      total: 450,
+      atualizadoEm: '2026-11-28T11:40:02Z',
+    });
+
+    httpMock.expectOne((r) => r.url.endsWith('/api/produto')).flush({
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 100,
+    });
+    httpMock
+      .expectOne(
+        (r) =>
+          r.url.endsWith('/api/produto/alertas-estoque') &&
+          r.params.get('apenasPendentes') === 'true',
+      )
+      .flush([]);
+
+    fixture.detectChanges();
+
+    expect(row.textContent).toContain('Em Preparo');
+    expect(row.textContent).toContain('Concluir');
   });
 });
