@@ -13,6 +13,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrderRealtimeService } from '../../../../core/services/order-realtime.service';
 import { StockAlertService } from '../../../../core/services/stock-alert.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { extractApiErrorMessage } from '../../../../core/utils/http-error.util';
@@ -22,8 +23,10 @@ import { StatusBadgeComponent } from '../../../../shared/components/status-badge
 import { OrderDetailModalComponent } from '../../components/order-detail-modal/order-detail-modal.component';
 import { OrderReturnModalComponent } from '../../components/order-return-modal/order-return-modal.component';
 import {
+  ORDER_STATUS_LABELS,
   OrderDetail,
   OrderStatus,
+  OrderStatusUpdatedEvent,
   OrderSummary,
   ReturnOrderPayload,
 } from '../../models/order.model';
@@ -50,11 +53,16 @@ export class OrderListComponent implements OnInit {
   protected readonly OrderStatus = OrderStatus;
   protected readonly authService = inject(AuthService);
   private readonly orderService = inject(OrderService);
+  private readonly orderRealtimeService = inject(OrderRealtimeService);
   private readonly stockAlertService = inject(StockAlertService);
   private readonly toastService = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly localMutatedOrderIds = new Set<number>();
+  private pendingFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingFallbackAttempts = 0;
 
   protected readonly pageSize = signal(10);
   protected readonly currentPage = signal(1);
@@ -103,6 +111,9 @@ export class OrderListComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => this.clearPendingFallbackTimer());
+    this.orderRealtimeService.connect();
+
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const q = params.get('q')?.trim() ?? '';
       this.currentPage.set(1);
@@ -118,6 +129,10 @@ export class OrderListComponent implements OnInit {
         this.loadOrders();
       }
     });
+
+    this.orderRealtimeService.statusUpdated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.applyRealtimeStatusUpdate(event));
   }
 
   protected canCancel(order: OrderSummary): boolean {
@@ -135,9 +150,11 @@ export class OrderListComponent implements OnInit {
     return this.authService.isAdmin() && order.status === OrderStatus.Completed;
   }
 
-  protected loadOrders(): void {
-    this.loading.set(true);
-    this.errorMessage.set(null);
+  protected loadOrders(silent = false): void {
+    if (!silent) {
+      this.loading.set(true);
+      this.errorMessage.set(null);
+    }
     const query = this.filterForm.controls.query.value;
     const effectiveSize = this.orderNumberFilter().trim() ? 100 : this.pageSize();
 
@@ -145,17 +162,31 @@ export class OrderListComponent implements OnInit {
       .getAll(query, this.currentPage(), effectiveSize)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.loading.set(false)),
+        finalize(() => {
+          if (!silent) {
+            this.loading.set(false);
+          }
+        }),
       )
       .subscribe({
         next: (res) => {
-          this.orders.set(res.items);
+          const mergedItems = res.items.map((item) => {
+            const recent = this.orderRealtimeService.getRecentUpdate(item.id);
+            if (recent && item.status === OrderStatus.Pending && recent.statusAtual !== OrderStatus.Pending) {
+              return { ...item, status: recent.statusAtual, total: recent.total };
+            }
+            return item;
+          });
+          this.orders.set(mergedItems);
           this.totalCount.set(res.totalCount);
+          this.scheduleFallbackSyncIfNeeded(mergedItems);
         },
         error: (err: unknown) => {
-          this.orders.set([]);
-          this.totalCount.set(0);
-          this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar pedidos.'));
+          if (!silent) {
+            this.orders.set([]);
+            this.totalCount.set(0);
+            this.errorMessage.set(extractApiErrorMessage(err, 'Erro ao carregar pedidos.'));
+          }
         },
       });
   }
@@ -219,6 +250,7 @@ export class OrderListComponent implements OnInit {
     }
 
     this.cancelling.set(true);
+    this.markLocalMutation(orderId);
     this.orderService
       .cancel(orderId)
       .pipe(
@@ -261,6 +293,7 @@ export class OrderListComponent implements OnInit {
     }
 
     this.completing.set(true);
+    this.markLocalMutation(orderId);
     this.orderService
       .complete(orderId)
       .pipe(
@@ -309,6 +342,7 @@ export class OrderListComponent implements OnInit {
     }
 
     this.returning.set(true);
+    this.markLocalMutation(orderId);
     this.returnErrorMessage.set(null);
 
     this.orderService
@@ -369,5 +403,102 @@ export class OrderListComponent implements OnInit {
           this.toastService.error(extractApiErrorMessage(err, 'Erro ao excluir pedido.'));
         },
       });
+  }
+
+  private markLocalMutation(orderId: number): void {
+    this.localMutatedOrderIds.add(orderId);
+    setTimeout(() => this.localMutatedOrderIds.delete(orderId), 5000);
+  }
+
+  private scheduleFallbackSyncIfNeeded(items: OrderSummary[]): void {
+    const hasPending = items.some((item) => item.status === OrderStatus.Pending);
+    if (!hasPending || this.orderRealtimeService.connectionState() === 'connected') {
+      this.pendingFallbackAttempts = 0;
+      this.clearPendingFallbackTimer();
+      return;
+    }
+
+    if (this.pendingFallbackAttempts >= 4 || this.pendingFallbackTimer !== null) {
+      return;
+    }
+
+    this.pendingFallbackAttempts += 1;
+    this.orderRealtimeService.connect();
+    this.pendingFallbackTimer = setTimeout(() => {
+      this.pendingFallbackTimer = null;
+      this.loadOrders(true);
+    }, 2500);
+  }
+
+  private clearPendingFallbackTimer(): void {
+    if (this.pendingFallbackTimer !== null) {
+      clearTimeout(this.pendingFallbackTimer);
+      this.pendingFallbackTimer = null;
+    }
+  }
+
+  private applyRealtimeStatusUpdate(event: OrderStatusUpdatedEvent): void {
+    const currentOrders = this.orders();
+    const existingIndex = currentOrders.findIndex((o) => o.id === event.pedidoId);
+
+    if (existingIndex !== -1) {
+      const updated = currentOrders.map((order) =>
+        order.id === event.pedidoId
+          ? { ...order, status: event.statusAtual, total: event.total }
+          : order,
+      );
+      this.orders.set(updated);
+      if (!updated.some((o) => o.status === OrderStatus.Pending)) {
+        this.pendingFallbackAttempts = 0;
+        this.clearPendingFallbackTimer();
+      }
+    } else if (
+      this.currentPage() === 1 &&
+      !this.filterForm.controls.query.value.trim() &&
+      !this.orderNumberFilter().trim()
+    ) {
+      const newSummary: OrderSummary = {
+        id: event.pedidoId,
+        dataPedido: event.atualizadoEm,
+        total: event.total,
+        status: event.statusAtual,
+      };
+      this.orders.set([newSummary, ...currentOrders].slice(0, this.pageSize()));
+      this.totalCount.update((count) => count + 1);
+    }
+
+    const openDetail = this.selectedOrderDetail();
+    if (openDetail?.id === event.pedidoId) {
+      this.selectedOrderDetail.set({
+        ...openDetail,
+        status: event.statusAtual,
+        total: event.total,
+        ...(event.statusAtual === OrderStatus.Completed ? { concluidoEm: event.atualizadoEm } : {}),
+        ...(event.statusAtual === OrderStatus.Returned
+          ? {
+              devolvidoEm: event.atualizadoEm,
+              motivoDevolucao: event.motivoDevolucao ?? openDetail.motivoDevolucao,
+            }
+          : {}),
+      });
+    }
+
+    const isStatusTransition = event.statusAnterior !== event.statusAtual;
+    if (isStatusTransition && !this.localMutatedOrderIds.has(event.pedidoId)) {
+      const statusLabel = ORDER_STATUS_LABELS[event.statusAtual] ?? 'Atualizado';
+      this.toastService.info(`Pedido #${event.pedidoId} atualizado para ${statusLabel}.`);
+    }
+
+    if (
+      isStatusTransition &&
+      (event.statusAtual === OrderStatus.Processed ||
+        event.statusAtual === OrderStatus.Cancelled ||
+        event.statusAtual === OrderStatus.Returned)
+    ) {
+      this.stockAlertService.checkCatalogStock();
+      if (this.authService.isAdmin()) {
+        this.stockAlertService.refreshPendingAlertsCount();
+      }
+    }
   }
 }

@@ -73,6 +73,16 @@ export interface ReturnOrderResponse {
   unidadesEstornadas: number;
 }
 
+export interface OrderStatusUpdatedEvent {
+  pedidoId: number;
+  clienteId: string;
+  statusAnterior: OrderStatus;
+  statusAtual: OrderStatus;
+  total: number;
+  atualizadoEm: string;
+  motivoDevolucao?: string | null;
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.Pending]: 'Pendente',
   [OrderStatus.Processed]: 'Em Preparo',

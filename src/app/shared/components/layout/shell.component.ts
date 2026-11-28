@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnDestroy,
   OnInit,
   computed,
   inject,
@@ -14,6 +15,7 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { HealthService } from '../../../core/services/health.service';
 import { LoadingService } from '../../../core/services/loading.service';
+import { OrderRealtimeService } from '../../../core/services/order-realtime.service';
 import { StockAlertService } from '../../../core/services/stock-alert.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -39,10 +41,11 @@ import { SystemHealthPopoverComponent } from '../system-health-popover/system-he
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
 })
-export class ShellComponent implements OnInit {
+export class ShellComponent implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly healthService = inject(HealthService);
   protected readonly loadingService = inject(LoadingService);
+  protected readonly orderRealtimeService = inject(OrderRealtimeService);
   protected readonly themeService = inject(ThemeService);
   protected readonly stockAlertService = inject(StockAlertService);
   private readonly toastService = inject(ToastService);
@@ -64,11 +67,16 @@ export class ShellComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.orderRealtimeService.connect();
     this.stockAlertService.checkCatalogStock();
     if (this.authService.isAdmin()) {
       this.stockAlertService.refreshPendingAlertsCount();
       this.healthService.checkReadiness();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.orderRealtimeService.disconnect();
   }
 
   protected onHeaderSearch(): void {

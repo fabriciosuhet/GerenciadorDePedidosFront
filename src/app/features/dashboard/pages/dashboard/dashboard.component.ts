@@ -14,6 +14,7 @@ import { RouterLink } from '@angular/router';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { ReportFormat, ReportPeriod } from '../../../../core/models/report.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { OrderRealtimeService } from '../../../../core/services/order-realtime.service';
 import { StockAlertService } from '../../../../core/services/stock-alert.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { triggerFileDownload } from '../../../../core/utils/file-download.util';
@@ -50,6 +51,7 @@ export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly customerService = inject(CustomerService);
   private readonly orderService = inject(OrderService);
+  private readonly orderRealtimeService = inject(OrderRealtimeService);
   private readonly stockAlertService = inject(StockAlertService);
   private readonly toastService = inject(ToastService);
   private readonly fb = inject(FormBuilder);
@@ -124,6 +126,29 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboard();
+
+    this.orderRealtimeService.statusUpdated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        const user = this.currentUser();
+        if (user) {
+          const hasOrder = user.pedidos.some((o) => o.id === event.pedidoId);
+          if (hasOrder) {
+            this.currentUser.set({
+              ...user,
+              pedidos: user.pedidos.map((order) =>
+                order.id === event.pedidoId
+                  ? { ...order, status: event.statusAtual, total: event.total }
+                  : order,
+              ),
+            });
+          }
+        }
+
+        if (this.authService.isAdmin() && !this.loading()) {
+          this.reloadAdminSummary();
+        }
+      });
   }
 
   protected loadDashboard(): void {
